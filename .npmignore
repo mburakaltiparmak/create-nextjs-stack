@@ -1,0 +1,15 @@
+# Ignore everything by default
+*
+
+# Allow specific files/folders
+!bin/**
+!templates/**
+!package.json
+!README.md
+!LICENSE
+
+# Ignore inside templates explicitly (if they snuck in)
+templates/**/node_modules
+templates/**/.next
+templates/**/.git
+templates/**/.env

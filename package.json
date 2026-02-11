@@ -1,0 +1,48 @@
+{
+  "name": "create-nextjs-stack",
+  "version": "0.1.0",
+  "description": "CLI to scaffold Next.js Landing Page and Supabase Admin Panel",
+  "private": false,
+  "bin": "./bin/cli.js",
+  "files": [
+    "bin",
+    "templates"
+  ],
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^14.0.3",
+    "fs-extra": "^11.3.3",
+    "ora": "^5.4.1",
+    "prompts": "^2.4.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "nextjs",
+    "starter",
+    "template",
+    "supabase",
+    "admin",
+    "cli"
+  ],
+  "author": "Mehmet Burak Altıparmak <mburakaltiparmak@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mburakaltiparmak/create-nextjs-stack.git"
+  },
+  "homepage": "https://github.com/mburakaltiparmak/create-nextjs-stack/blob/main/README.md",
+  "bugs": {
+    "url": "https://github.com/mburakaltiparmak/create-nextjs-stack/issues"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^25.2.3",
+    "execa": "^9.6.1",
+    "vitest": "^4.0.18"
+  }
+}
