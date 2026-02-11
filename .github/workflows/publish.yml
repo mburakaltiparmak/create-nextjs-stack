@@ -16,7 +16,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20.x"
-          registry-url: "https://registry.npmjs.org"
           cache: "npm"
 
       - name: Install dependencies
@@ -27,6 +26,11 @@ jobs:
 
       - name: Publish to NPM
         run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "ERROR: NODE_AUTH_TOKEN is empty or missing!"
+            exit 1
+          fi
+          echo "Token check passed. Length: ${#NODE_AUTH_TOKEN}"
           npm config set //registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}
           npm publish --access public
         env:
