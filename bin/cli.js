@@ -9,6 +9,12 @@ const ora = require("ora");
 
 // Read version from package.json
 const packageJson = require("../package.json");
+const updateNotifier = require("update-notifier");
+
+const notifier = updateNotifier({ pkg: packageJson, updateCheckInterval: 1000 * 60 * 60 * 24 });
+if (notifier.update) {
+  notifier.notify();
+}
 
 program
   .name("create-nextjs-stack")
