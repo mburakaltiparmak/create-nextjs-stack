@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@reduxjs/toolkit": "^2.11.2",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.94.1",
     "cloudinary": "^2.9.0",
@@ -18,7 +19,9 @@
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-hook-form": "^7.71.1",
+    "react-redux": "^9.2.0",
     "react-toastify": "^11.0.3",
+    "redux-logger": "^3.0.6",
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
@@ -26,6 +29,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/redux-logger": "^3.0.13",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "^16.1.6",
