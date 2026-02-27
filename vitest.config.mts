@@ -10,20 +10,25 @@ export default defineConfig({
     ],
     watch: false,
     testTimeout: 60_000,
-    // Test organizasyonu
     reporters: ["verbose"],
-    // Coverage (npm run test:coverage ile çalıştır)
+    // Coverage: Bilgilendirme amaçlı — threshold YOK.
+    //
+    // Bu proje bir CLI tool. Testler CLI'ı execa ile child process olarak
+    // çalıştırıyor. V8 coverage provider sadece ana Vitest process'i içinde
+    // çalışan kodu izleyebilir, child process'leri göremez.
+    // Bu yüzden coverage raporu ~0% gösterir — bu beklenen davranış.
+    //
+    // Coverage'ı anlamlı hale getirmek için bin/cli.js'teki iş mantığını
+    // ayrı modüllere (lib/) çıkarıp doğrudan import ederek unit test
+    // yazmak gerekir. Bu, sonraki fazda planlanıyor.
+    //
+    // Şu anki 87 integration test, scaffold sonuçlarını dosya sistemi
+    // üzerinden doğrulayarak gerçek fonksiyonel coverage sağlıyor.
     coverage: {
       provider: "v8",
       include: ["bin/**"],
-      reporter: ["text", "text-summary", "json", "html"],
+      reporter: ["text", "text-summary"],
       reportsDirectory: "./coverage",
-      thresholds: {
-        statements: 70,
-        branches: 60,
-        functions: 70,
-        lines: 70,
-      },
     },
   },
 });
