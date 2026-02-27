@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+templates/*/package-lock.json
 /.pnp
 .pnp.*
 .yarn/*

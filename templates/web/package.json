@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "description": "Next.js Landing Page Starter",
   "private": true,
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
@@ -28,7 +31,7 @@
     "react-redux": "^9.2.0",
     "react-toastify": "^11.0.5",
     "resend": "^6.6.0",
-    "zod": "^4.3.5"
+    "zod": "^3.25.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

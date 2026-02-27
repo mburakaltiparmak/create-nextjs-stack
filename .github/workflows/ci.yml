@@ -7,12 +7,50 @@ on:
     branches: [main, master]
 
 jobs:
+  # ── Lint & Paket Sağlığı ──────────────────────────────────────────────────
+  lint:
+    name: Package Health
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify dependency tree
+        run: npm ls --all --depth=0
+
+      - name: Audit for vulnerabilities
+        run: npm audit --omit=dev || true
+
+      - name: Check package contents (dry-run)
+        run: |
+          echo "=== npm pack dry-run ==="
+          npm pack --dry-run 2>&1 | tee /tmp/pack-output.txt
+
+          echo ""
+          echo "=== Checking for unwanted files ==="
+          if grep -E "package-lock\.json|\.env[^.]|node_modules|\.next|\.git/" /tmp/pack-output.txt; then
+            echo "❌ ERROR: Unwanted files found in package!"
+            exit 1
+          else
+            echo "✅ Package contents look clean."
+          fi
+
+  # ── Test Matrix ────────────────────────────────────────────────────────────
   test:
     name: Test on Node.js ${{ matrix.node-version }}
     runs-on: ubuntu-latest
+    needs: lint
     strategy:
       matrix:
-        node-version: [18.x, 20.x, 22.x]
+        node-version: [20.x, 22.x]
 
     steps:
       - uses: actions/checkout@v4
@@ -26,8 +64,33 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: verify dependencies (for debugging)
-        run: npm ls fs-extra
-
       - name: Run tests
         run: npm test
+
+  # ── Coverage (sadece ana branch) ───────────────────────────────────────────
+  coverage:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14

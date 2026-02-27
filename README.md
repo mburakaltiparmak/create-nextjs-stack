@@ -5,7 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/create-nextjs-stack.svg?style=flat-square)](https://www.npmjs.com/package/create-nextjs-stack)
 [![npm downloads](https://img.shields.io/npm/dm/create-nextjs-stack.svg?style=flat-square)](https://www.npmjs.com/package/create-nextjs-stack)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen?style=flat-square)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen?style=flat-square)](https://nodejs.org/)
 
 **A zero-config CLI to scaffold production-ready Next.js applications.**  
 Choose between a marketing landing page, a Supabase admin panel, or both — in one command.
@@ -336,11 +336,6 @@ NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsIn...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsIn...     # Never expose this client-side!
 
-# Supabase project meta (used by Supabase CLI / migrations)
-SUPABASE_PROJECT_ID=xxxxxxxxxxxx
-SUPABASE_PROJECT_NAME=my-project
-SUPABASE_DATABASE_PASSWORD=your-db-password
-
 # Used to verify on-demand revalidation requests
 REVALIDATION_SECRET=a-random-secret-string
 
@@ -349,7 +344,6 @@ REVALIDATION_SECRET=a-random-secret-string
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=000000000000000
 CLOUDINARY_API_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-CLOUDINARY_ID=your-cloud-name                   # Same as CLOUD_NAME, for SDK compat
 CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
 
 # ─── Site ──────────────────────────────────────────────────────────────────────
@@ -382,7 +376,7 @@ CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
 
 | Tool    | Minimum Version |
 | ------- | --------------- |
-| Node.js | 18.x            |
+| Node.js | 20.x            |
 | npm     | 9.x             |
 
 ### Available Scripts
@@ -497,7 +491,7 @@ A: Yes — create two separate Vercel projects pointing to the same repository, 
 
 ## 🤝 Contributing
 
-Contributions, bug reports, and feature requests are welcome!
+Contributions, bug reports, and feature requests are welcome! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 
 1. [Open an issue](https://github.com/mburakaltiparmak/create-nextjs-stack/issues) to discuss what you'd like to change.
 2. Fork the repository and create a feature branch:

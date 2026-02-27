@@ -6,9 +6,32 @@ const { program } = require("commander");
 const prompts = require("prompts");
 const chalk = require("chalk");
 const ora = require("ora");
+const { execSync } = require("child_process");
+
+function detectPackageManager() {
+  const userAgent = process.env.npm_config_user_agent || "";
+  if (userAgent.startsWith("yarn")) return "yarn";
+  if (userAgent.startsWith("pnpm")) return "pnpm";
+  if (userAgent.startsWith("bun")) return "bun";
+  return "npm";
+}
+
+function isPackageManagerAvailable(pm) {
+  try {
+    execSync(`${pm} --version`, { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // Read version from package.json
 const packageJson = require("../package.json");
+
+process.on("SIGINT", () => {
+  console.log(chalk.red("\n\nOperation cancelled."));
+  process.exit(1);
+});
 const updateNotifier = require("update-notifier");
 
 const notifier = updateNotifier({ pkg: packageJson, updateCheckInterval: 1000 * 60 * 60 * 24 });
@@ -23,6 +46,17 @@ program
   .argument("[project-directory]", "Directory to create the project in")
   .option("-t, --template <type>", "Template type: web, admin, or full-stack")
   .action(async (projectDirectory, options) => {
+    const validTemplates = ["web", "admin", "full-stack"];
+    if (options.template && !validTemplates.includes(options.template)) {
+      console.log(
+        chalk.red(
+          `\nInvalid template: "${options.template}"\n` +
+            `Valid options: ${validTemplates.join(", ")}\n`
+        )
+      );
+      process.exit(1);
+    }
+
     let targetDir = projectDirectory;
 
     // 1. Get Project Name / Directory
@@ -168,24 +202,122 @@ program
 
       spinner.succeed("Scaffolding complete!");
 
-      console.log(`\nSuccess! Created project at ${root}\n`);
+      // Skip install prompts if testing
+      if (process.env.NODE_ENV !== "test" && process.env.VITEST !== "true") {
+        const detectedPm = detectPackageManager();
 
-      if (templateType === "full-stack") {
+        const { packageManager } = await prompts({
+          type: "select",
+          name: "packageManager",
+          message: "Which package manager would you like to use?",
+          choices: [
+            { title: "npm", value: "npm" },
+            { title: "yarn", value: "yarn" },
+            { title: "pnpm", value: "pnpm" },
+            { title: "bun", value: "bun" },
+          ].filter((choice) => isPackageManagerAvailable(choice.value)),
+          initial: ["npm", "yarn", "pnpm", "bun"].indexOf(detectedPm) >= 0 ? ["npm", "yarn", "pnpm", "bun"].indexOf(detectedPm) : 0,
+        });
+
+        if (!packageManager) {
+          console.log(chalk.red("\nOperation cancelled."));
+          process.exit(1);
+        }
+
+        const { shouldInstall } = await prompts({
+          type: "confirm",
+          name: "shouldInstall",
+          message: `Install dependencies with ${packageManager}?`,
+          initial: true,
+        });
+
+        if (shouldInstall === undefined) {
+          console.log(chalk.red("\nOperation cancelled."));
+          process.exit(1);
+        }
+
+        if (shouldInstall) {
+          const installTargets =
+            templateType === "full-stack"
+              ? [path.join(root, "web"), path.join(root, "admin")]
+              : [root];
+
+          for (const target of installTargets) {
+            const dirName = path.basename(target);
+            const installSpinner = ora(
+              `Installing dependencies in ${dirName}...`,
+            ).start();
+
+            try {
+              const installCmd =
+                packageManager === "yarn" ? "yarn" : `${packageManager} install`;
+
+              execSync(installCmd, {
+                cwd: target,
+                stdio: "pipe",
+              });
+
+              installSpinner.succeed(`Dependencies installed in ${dirName}`);
+            } catch (error) {
+              installSpinner.fail(`Failed to install dependencies in ${dirName}`);
+              console.log(
+                chalk.yellow(
+                  `  You can install manually: cd ${dirName} && ${packageManager} install`,
+                ),
+              );
+            }
+          }
+        }
+        
+        console.log(`\n${chalk.green("Success!")} Created project at ${root}\n`);
         console.log("Next steps:");
         console.log(chalk.cyan(`  cd ${appName}`));
-        console.log("  Then go to either web or admin folder:");
-        console.log(chalk.cyan(`  cd web`));
-        console.log(chalk.cyan(`  npm install`));
-        console.log(chalk.cyan(`  npm run dev`));
+
+        if (templateType === "full-stack") {
+          console.log("  Then go to either web or admin folder:");
+          console.log(chalk.cyan(`  cd web`));
+          if (!shouldInstall) {
+            console.log(chalk.cyan(`  ${packageManager || "npm"} install`));
+          }
+          console.log(chalk.cyan(`  ${packageManager || "npm"} run dev`));
+        } else {
+          if (!shouldInstall) {
+            console.log(chalk.cyan(`  ${packageManager || "npm"} install`));
+          }
+          console.log(chalk.cyan(`  ${packageManager || "npm"} run dev`));
+        }
       } else {
+        // Fallback for tests
+        console.log(`\nSuccess! Created project at ${root}\n`);
         console.log("Next steps:");
         console.log(chalk.cyan(`  cd ${appName}`));
-        console.log(chalk.cyan(`  npm install`));
-        console.log(chalk.cyan(`  npm run dev`));
+        if (templateType === "full-stack") {
+          console.log("  Then go to either web or admin folder:");
+          console.log(chalk.cyan(`  cd web`));
+          console.log(chalk.cyan(`  npm install`));
+          console.log(chalk.cyan(`  npm run dev`));
+        } else {
+          console.log(chalk.cyan(`  npm install`));
+          console.log(chalk.cyan(`  npm run dev`));
+        }
       }
     } catch (error) {
       spinner.fail("Error scaffolding project.");
-      console.error(error);
+
+      if (error.code === "EACCES") {
+        console.error(
+          chalk.red("\nPermission denied. Try running with elevated privileges.")
+        );
+      } else if (error.code === "ENOSPC") {
+        console.error(chalk.red("\nNo disk space available."));
+      } else {
+        console.error(chalk.red(`\n${error.message || error}`));
+      }
+
+      if (process.env.DEBUG) {
+        console.error("\nFull error:", error);
+      }
+
       process.exit(1);
     }
   });

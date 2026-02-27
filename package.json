@@ -1,7 +1,8 @@
 {
   "name": "create-nextjs-stack",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "description": "CLI to scaffold Next.js Landing Page and Supabase Admin Panel",
+  "type": "commonjs",
   "private": false,
   "bin": {
     "create-nextjs-stack": "./bin/cli.js"
@@ -10,8 +11,14 @@
     "bin",
     "templates"
   ],
+  "exports": {
+    ".": "./bin/cli.js"
+  },
   "scripts": {
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:verbose": "vitest run --reporter=verbose"
   },
   "dependencies": {
     "chalk": "^4.1.2",
@@ -22,15 +29,22 @@
     "update-notifier": "^5.1.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "keywords": [
     "nextjs",
+    "next",
     "starter",
     "template",
+    "scaffold",
+    "cli",
+    "create",
     "supabase",
     "admin",
-    "cli"
+    "tailwind",
+    "typescript",
+    "react",
+    "boilerplate"
   ],
   "author": "Mehmet Burak Altıparmak <mburakaltiparmak@gmail.com>",
   "license": "MIT",
@@ -45,6 +59,7 @@
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^25.2.3",
+    "@vitest/coverage-v8": "^4.0.18",
     "execa": "^9.6.1",
     "vitest": "^4.0.18"
   }
