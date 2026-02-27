@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-02-27
+
+### Added
+
+- **Admin Template**: Full Redux Toolkit store setup with `redux-logger` (dev only), `redux-thunk` (via RTK default middleware), typed `useAppDispatch`/`useAppSelector` hooks, and `StoreProvider` integrated into the root layout.
+- **Web Template**: Added `redux-logger` middleware (dev only) and typed Redux hooks (`store/hooks.ts`) for use throughout the app.
+
+### Fixed
+
+- **Web Template**: Removed legacy `@types/react-redux` and `@types/redux-logger` devDependencies that caused package resolution conflicts.
+- **Web Template**: Migrated `combineReducers` import from deprecated `redux` package to `@reduxjs/toolkit`.
+- **Admin Template**: Fixed `tsconfig.json` path alias from `@/*: [./*]` to `@/*: [./src/*]` for correct module resolution.
+
 ## [0.1.3] - 2026-02-27
 
 ### Fixed
@@ -62,7 +75,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Form validation with React Hook Form + Zod
 - Multi-language ready structure
 
-[unreleased]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.3...HEAD
+[unreleased]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.0...v0.1.1
