@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-02-27
+
+### Fixed
+
+- **Release process**: Corrected git tagging sequence to ensure the package versions sync with `npm publish`.
+
+## [0.1.6] - 2026-02-27
+
+- Failed release due to tag mismatch.
+
 ## [0.1.5] - 2026-02-27
 
 ### Fixed
@@ -82,7 +92,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Form validation with React Hook Form + Zod
 - Multi-language ready structure
 
-[unreleased]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.5...HEAD
+[unreleased]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.7...HEAD
+[0.1.7]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.6...v0.1.7
+[0.1.6]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.2...v0.1.3
