@@ -1,6 +1,6 @@
 {
   "name": "create-nextjs-stack",
-  "version": "0.1.7",
+  "version": "0.1.9",
   "description": "CLI to scaffold Next.js Landing Page and Supabase Admin Panel",
   "private": false,
   "bin": {

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.9] - 2026-02-27
+
+### Fixed
+
+- **Admin**: Fixed path alias resolution issues in imported components (`@/*`) by reverting `tsconfig.json` paths and ensuring the correct folder structure (removed `src` directory from the admin template entirely as the Next.js `app` router natively supports root-level directories).
+
+## [0.1.8] - 2026-02-27
+
+### Fixed
+
+- **Admin Template**: Reverted `tsconfig.json` paths mapping (`@/* -> ./*`) and moved Redux store files out of the incorrect `src` folder to fix broken imports (e.g., `@/lib/supabase/middleware`).
+
 ## [0.1.7] - 2026-02-27
 
 ### Fixed
@@ -92,7 +104,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Form validation with React Hook Form + Zod
 - Multi-language ready structure
 
-[unreleased]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.7...HEAD
+[unreleased]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.9...HEAD
+[0.1.9]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.8...v0.1.9
+[0.1.8]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.4...v0.1.5
