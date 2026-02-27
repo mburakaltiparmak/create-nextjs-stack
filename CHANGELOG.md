@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-02-27
+
+### Fixed
+
+- **Template Dependencies**: Fixed ESM module resolution and missing "react-redux" errors in generated projects by switching hardcoded `next` and `eslint-config-next` versions to semantic version ranges (`^`), resolving peer dependency conflicts during initial `npm install`.
+
 ## [0.1.2] - 2026-02-27
 
 ### Added
@@ -56,7 +62,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Form validation with React Hook Form + Zod
 - Multi-language ready structure
 
-[unreleased]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.2...HEAD
+[unreleased]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/mburakaltiparmak/create-nextjs-stack/releases/tag/v0.1.0
