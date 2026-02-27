@@ -60,7 +60,7 @@ The result is a codebase that follows real-world best practices — App Router, 
 npx create-nextjs-stack@latest my-app
 
 # Using npm
-npm create nextjs-stack my-app
+npm create nextjs-stack@latest my-app
 
 # Global install (optional)
 npm install -g create-nextjs-stack
