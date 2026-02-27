@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-02-27
+
+### Fixed
+
+- **Package Structure**: Converted `bin` field from string to explicit object format to prevent npm publish warnings and ensure correct binary registration.
+- **CI/CD**: Added `registry-url` to `actions/setup-node` in `publish.yml` for reliable npm authentication. Removed fragile manual `npm config set` auth hack.
+
 ## [0.1.4] - 2026-02-27
 
 ### Added
@@ -75,7 +82,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Form validation with React Hook Form + Zod
 - Multi-language ready structure
 
-[unreleased]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.4...HEAD
+[unreleased]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/mburakaltiparmak/create-nextjs-stack/compare/v0.1.1...v0.1.2
