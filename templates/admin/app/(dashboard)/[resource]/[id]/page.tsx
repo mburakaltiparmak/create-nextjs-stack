@@ -4,14 +4,15 @@ import { getServerClient } from "@/lib/supabase/server";
 import ResourceFormClient from "@/components/admin/ResourceFormClient";
 
 interface PageProps {
-  params: {
+  params: Promise<{
     resource: string;
     id: string;
-  };
+  }>;
 }
 
 export default async function EditResourcePage({ params }: PageProps) {
-  const resourceName = params.resource;
+  const resolvedParams = await params;
+  const resourceName = resolvedParams.resource;
   const config = resources.find((r) => r.name === resourceName);
 
   if (!config) {
@@ -22,7 +23,7 @@ export default async function EditResourcePage({ params }: PageProps) {
   const { data: item, error } = await supabase
     .from(config.table)
     .select("*")
-    .eq("id", params.id)
+    .eq("id", resolvedParams.id)
     .single();
 
   if (error || !item) {
@@ -38,7 +39,7 @@ export default async function EditResourcePage({ params }: PageProps) {
         config={config} 
         mode="update" 
         initialData={item}
-        id={params.id}
+        id={resolvedParams.id}
       />
     </div>
   );

@@ -6,42 +6,39 @@ import { SEOConfig } from './seo.types';
  */
 export const seoConfig: SEOConfig = {
     site: {
-        siteName: 'Eurodeco Panel Systems GmbH',
-        siteUrl: 'https://www.eurodecopanel.de',
-        defaultLocale: 'de',
-        locales: ['de', 'en'],
+        siteName: 'Your Company Name',
+        siteUrl: 'https://www.yourdomain.com',
+        defaultLocale: 'en',
+        locales: ['en', 'de'],
         defaultOGImage: '/images/og-default.jpg',
-        twitterHandle: '@eurodecopanel', // Placeholder handle
+        twitterHandle: '@yourhandle', // Placeholder handle
     },
 
     pages: {
         // Home Page SEO
         home: {
-            title: 'Eurodeco Panel Systems GmbH - Innovative Panel-Systeme',
+            title: 'Your Company Name - Catchy Slogan Here',
             description:
-                'Eurodeco Panel Systems GmbH entwickelt und vertreibt moderne Hochleistungs-Paneelsysteme für anspruchsvolle Architektur, Innenausbau und Gewerbeprojekte.',
+                'Your company description goes here. Explain what you do, who you serve, and why you are the best choice for your customers.',
             keywords: [
-                'Eurodeco',
-                'Panel-Systeme',
-                'Wandpaneele',
-                'Deckenpaneele',
-                'Brandschutz',
-                'Leichtbau',
-                'Architektur',
-                'Gewerbeprojekte',
+                'Keyword 1',
+                'Keyword 2',
+                'Keyword 3',
+                'Keyword 4',
+                'Keyword 5',
             ],
             openGraph: {
-                title: 'Eurodeco Panel Systems GmbH - Innovative Panel-Systeme',
+                title: 'Your Company Name - Catchy Slogan Here',
                 description:
-                    'Entwickelt und vertreibt moderne Hochleistungs-Paneelsysteme für anspruchsvolle Architektur.',
+                    'Your short company description for social media sharing goes here.',
                 images: ['/images/og-home.jpg'],
                 type: 'website',
             },
             twitter: {
                 card: 'summary_large_image',
-                title: 'Eurodeco Panel Systems GmbH - Innovative Panel-Systeme',
+                title: 'Your Company Name - Catchy Slogan Here',
                 description:
-                    'Entwickelt und vertreibt moderne Hochleistungs-Paneelsysteme für anspruchsvolle Architektur.',
+                    'Your short company description for Twitter sharing goes here.',
                 images: ['/images/twitter-home.jpg'],
             },
             robots: {
@@ -56,22 +53,21 @@ export const seoConfig: SEOConfig = {
 
         // About Page SEO
         about: {
-            title: 'Über Uns - Eurodeco Panel Systems GmbH',
+            title: 'About Us - Your Company Name',
             description:
-                'Erfahren Sie mehr über Eurodeco Panel Systems GmbH, unsere Mission, Vision und Technologie für moderne Paneelsysteme.',
+                'Learn more about Your Company Name, our mission, vision, and the technology behind our products and services.',
             keywords: [
-                'Über Eurodeco',
-                'Mission',
-                'Vision',
-                'Technologie',
-                'Paneelsysteme',
-                'Unternehmensprofil',
+                'About Us',
+                'Company Mission',
+                'Company Vision',
+                'Our Technology',
+                'Company Profile',
             ],
-            canonical: 'https://www.eurodecopanel.de/about',
+            canonical: 'https://www.yourdomain.com/about',
             openGraph: {
-                title: 'Über Uns - Eurodeco Panel Systems GmbH',
+                title: 'About Us - Your Company Name',
                 description:
-                    'Erfahren Sie mehr über Eurodeco Panel Systems GmbH und unsere innovativen Lösungen.',
+                    'Learn more about Your Company Name and our innovative solutions.',
                 images: ['/images/og-about.jpg'],
                 type: 'website',
             },
@@ -83,21 +79,21 @@ export const seoConfig: SEOConfig = {
 
         // Works/Projects Page SEO
         works: {
-            title: 'Referenzen - Eurodeco Panel Systems GmbH',
+            title: 'Our Work - Your Company Name',
             description:
-                'Entdecken Sie unsere erfolgreichen Projekte und Referenzen in den Bereichen Gewerbe, Büro, Hotel und öffentliche Gebäude.',
+                'Discover our successful projects and references across various industries and domains.',
             keywords: [
-                'Referenzen',
-                'Projekte',
-                'Eurodeco Projekte',
-                'Architektur Referenzen',
-                'Bauprojekte',
+                'References',
+                'Projects',
+                'Our Work',
+                'Portfolio',
+                'Case Studies',
             ],
-            canonical: 'https://www.eurodecopanel.de/references',
+            canonical: 'https://www.yourdomain.com/references',
             openGraph: {
-                title: 'Referenzen - Eurodeco Panel Systems GmbH',
+                title: 'Our Work - Your Company Name',
                 description:
-                    'Entdecken Sie unsere erfolgreichen Projekte und Referenzen.',
+                    'Discover our successful projects and references.',
                 images: ['/images/og-works.jpg'],
                 type: 'website',
             },
@@ -109,20 +105,20 @@ export const seoConfig: SEOConfig = {
 
         // Blog Page SEO (Keeping structurally but updating content generic/german if needed, or removing if not in list. Task.md didn't ask to remove, just update config. I'll translate to German generic).
         blog: {
-            title: 'Aktuelles - Eurodeco Panel Systems GmbH',
+            title: 'Blog - Your Company Name',
             description:
-                'Neuigkeiten und Trends zu Paneelsystemen, Architektur und Innovationen von Eurodeco.',
+                'News, trends, and insights about our industry and innovations from Your Company Name.',
             keywords: [
-                'Eurodeco News',
-                'Architektur Trends',
-                'Paneel Innovationen',
-                'Baubranche',
+                'Company News',
+                'Industry Trends',
+                'Innovations',
+                'Blog',
             ],
-            canonical: 'https://www.eurodecopanel.de/blog',
+            canonical: 'https://www.yourdomain.com/blog',
             openGraph: {
-                title: 'Aktuelles - Eurodeco Panel Systems GmbH',
+                title: 'Blog - Your Company Name',
                 description:
-                    'Neuigkeiten und Trends zu Paneelsystemen und Architektur.',
+                    'News, trends, and insights about our industry and architecture.',
                 images: ['/images/og-blog.jpg'],
                 type: 'website',
             },
@@ -134,21 +130,21 @@ export const seoConfig: SEOConfig = {
 
         // Contact Page SEO
         contact: {
-            title: 'Kontakt - Eurodeco Panel Systems GmbH',
+            title: 'Contact - Your Company Name',
             description:
-                'Kontaktieren Sie Eurodeco Panel Systems GmbH für Ihr nächstes Architektur- oder Bauprojekt. Wir freuen uns auf den Austausch.',
+                'Contact Your Company Name for your next project. We look forward to hearing from you.',
             keywords: [
-                'Kontakt Eurodeco',
-                'Anfrage',
-                'Projekt starten',
-                'Eurodeco Adresse',
-                'Eurodeco Email',
+                'Contact Us',
+                'Inquiry',
+                'Start Project',
+                'Company Address',
+                'Company Email',
             ],
-            canonical: 'https://www.eurodecopanel.de/contact',
+            canonical: 'https://www.yourdomain.com/contact',
             openGraph: {
-                title: 'Kontakt - Eurodeco Panel Systems GmbH',
+                title: 'Contact - Your Company Name',
                 description:
-                    'Kontaktieren Sie uns für Ihr nächstes Projekt.',
+                    'Contact us for your next project.',
                 images: ['/images/og-contact.jpg'],
                 type: 'website',
             },

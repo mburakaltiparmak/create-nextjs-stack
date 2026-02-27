@@ -30,13 +30,6 @@ export async function uploadImage(formData: FormData) {
     return { error: "No file provided" };
   }
 
-  // Debug: Log config state (safe)
-  const config = cloudinary.config();
-  console.log("Active Cloudinary Config:", {
-    cloud_name: config.cloud_name,
-    api_key: config.api_key ? "HIDDEN (Set)" : "MISSING",
-    api_secret: config.api_secret ? "HIDDEN (Set)" : "MISSING",
-  });
 
   try {
     const arrayBuffer = await file.arrayBuffer();

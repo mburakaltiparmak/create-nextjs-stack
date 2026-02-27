@@ -1,43 +1,35 @@
 import { MetadataRoute } from 'next';
-import { projectService } from '@/lib/services/projectService';
-import { productService } from '@/lib/services/productService';
+import { getAdminClient } from '@/lib/supabase/server';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const baseUrl = 'https://www.DOMAIN_PLACEHOLDER.com';
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com';
 
     // Static pages - CUSTOMIZE THESE ROUTES FOR YOUR PROJECT
     const routes = [
         '',
         '/about',
-        '/products',
-        '/innovation',
-        '/services',
-        '/investors',
-        '/references',
         '/contact',
-        '/impressum',
-        '/datenschutz',
-        '/agb'
     ];
 
-    const sitemap: MetadataRoute.Sitemap = [];
+    const entries: MetadataRoute.Sitemap = routes.map((route) => ({
+        url: `${baseUrl}${route}`,
+        lastModified: new Date(),
+        changeFrequency: route === '' ? 'daily' : 'weekly',
+        priority: route === '' ? 1.0 : route === '/contact' ? 0.9 : 0.8,
+    }));
 
-    // Generate entries for each route
-    routes.forEach((route) => {
-        sitemap.push({
-            url: `${baseUrl}${route}`,
-            lastModified: new Date(),
-            changeFrequency: route === '' ? 'daily' : 'weekly',
-            priority: route === '' ? 1.0 : (route === '/contact' ? 0.9 : 0.8),
-        });
-    });
+    const supabase = await getAdminClient();
 
-    // Dynamic Projects
+    // Dynamic Projects - CUSTOMIZE TABLE AND SLUG FIELD FOR YOUR PROJECT
     try {
-        const projectSlugs = await projectService.getAllSlugs();
-        projectSlugs.forEach((slug) => {
-            sitemap.push({
-                url: `${baseUrl}/references/${slug}`,
+        const { data: projects } = await supabase
+            .from('projects')
+            .select('slug')
+            .eq('published', true);
+
+        projects?.forEach(({ slug }) => {
+            entries.push({
+                url: `${baseUrl}/projects/${slug}`,
                 lastModified: new Date(),
                 changeFrequency: 'weekly',
                 priority: 0.7,
@@ -47,11 +39,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         console.error('[Sitemap] Error fetching project slugs:', error);
     }
 
-    // Dynamic Products
+    // Dynamic Products - CUSTOMIZE TABLE AND SLUG FIELD FOR YOUR PROJECT
     try {
-        const productSlugs = await productService.getAllSlugs();
-        productSlugs.forEach((slug) => {
-            sitemap.push({
+        const { data: products } = await supabase
+            .from('products')
+            .select('slug')
+            .eq('published', true);
+
+        products?.forEach(({ slug }) => {
+            entries.push({
                 url: `${baseUrl}/products/${slug}`,
                 lastModified: new Date(),
                 changeFrequency: 'weekly',
@@ -62,5 +58,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         console.error('[Sitemap] Error fetching product slugs:', error);
     }
 
-    return sitemap;
+    return entries;
 }

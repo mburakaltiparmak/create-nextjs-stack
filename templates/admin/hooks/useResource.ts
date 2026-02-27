@@ -56,6 +56,9 @@ export function useResource(config: ResourceConfig) {
   };
 
   const remove = async (id: string) => {    
+    if (!window.confirm("Are you sure you want to delete this record?")) {
+      return false;
+    }
     setIsDeleting(true);
     try {
       const result = await deleteResource(config.table, id);

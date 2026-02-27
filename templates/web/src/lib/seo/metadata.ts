@@ -88,16 +88,16 @@ export function generateOrganizationSchema() {
         url: site.siteUrl,
         logo: `${site.siteUrl}/images/logo.png`,
         description:
-            'Eurodeco Panel Systems GmbH - Innovative Panel-Systeme für Architektur der Zukunft',
+            'Your Company Name - Generic description for your business',
         contactPoint: {
             '@type': 'ContactPoint',
             contactType: 'Sales',
-            availableLanguage: ['German', 'English'],
+            availableLanguage: ['English', 'German'],
         },
         sameAs: [
-            // Sosyal medya linklerinizi buraya ekleyin
-            // 'https://www.linkedin.com/company/eurodeco-panel-systems',
-            // 'https://www.instagram.com/eurodeco',
+            // Add your social media links here
+            // 'https://www.linkedin.com/company/yourcompany',
+            // 'https://www.instagram.com/yourcompany',
         ],
     };
 }

@@ -1,10 +1,10 @@
-import { getServerClient } from "@/lib/supabase/server";
+import { getAdminClient } from "@/lib/supabase/server";
 
 export class CategoryService {
   private static table = "categories";
 
   static async getAll() {
-    const supabase = await getServerClient();
+    const supabase = await getAdminClient();
     const { data, error } = await supabase
       .from(this.table)
       .select("*")
@@ -20,7 +20,7 @@ export class CategoryService {
   }
 
   static async getBySlug(slug: string) {
-    const supabase = await getServerClient();
+    const supabase = await getAdminClient();
     const { data, error } = await supabase
       .from(this.table)
       .select("*")

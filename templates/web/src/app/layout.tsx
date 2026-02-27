@@ -1,56 +1,14 @@
 import type { Metadata, Viewport } from "next";
 import {
-  Geist,
-  Geist_Mono,
   Inter,
-  Outfit,
-  Raleway,
-  Roboto,
-  Jersey_10,
 } from "next/font/google";
 import "@/app/globals.css";
 import StoreProvider from "@/lib/providers/StoreProvider";
 import { GoogleAnalytics } from "@next/third-parties/google";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
-  display: "swap",
-});
-
-const roboto = Roboto({
-  variable: "--font-roboto",
-  subsets: ["latin"],
-  weight: ["100", "300", "400", "500", "700", "900"],
-  display: "swap",
-});
-
-const outfit = Outfit({
-  variable: "--font-outfit",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const raleway = Raleway({
-  variable: "--font-raleway",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const jersey10 = Jersey_10({
-  variable: "--font-jersey-10",
-  subsets: ["latin"],
-  weight: "400",
   display: "swap",
 });
 
@@ -65,7 +23,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://create-nextjs-stack.vercel.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
   title: {
     default: "Next.js Enterprise Starter",
     template: "%s | Next.js Enterprise Starter",
@@ -89,7 +47,7 @@ export const metadata: Metadata = {
     shortcut: "/favicon.png",
   },
   alternates: {
-    canonical: "https://create-nextjs-stack.vercel.app",
+    canonical: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
   },
   openGraph: {
     locale: "en_US",
@@ -114,11 +72,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${outfit.variable} ${roboto.variable} ${raleway.variable} ${jersey10.variable} antialiased`}
+        className={`${inter.variable} antialiased`}
       >
         <StoreProvider>
           {children}
-          <GoogleAnalytics gaId="G-XYZ1234567" />
+          {process.env.NEXT_PUBLIC_GA_ID && <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />}
         </StoreProvider>
       </body>
     </html>

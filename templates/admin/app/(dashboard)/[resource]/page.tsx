@@ -6,13 +6,14 @@ import Image from "next/image";
 import { getService } from "@/lib/services";
 
 interface PageProps {
-  params: {
+  params: Promise<{
     resource: string;
-  };
+  }>;
 }
 
 export default async function ResourceListPage({ params }: PageProps) {
-  const resourceName = params.resource;
+  const resolvedParams = await params;
+  const resourceName = resolvedParams.resource;
   const config = resources.find((r) => r.name === resourceName);
 
   if (!config) {

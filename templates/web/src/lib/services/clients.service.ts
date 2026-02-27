@@ -1,10 +1,10 @@
-import { getServerClient } from "@/lib/supabase/server";
+import { getAdminClient } from "@/lib/supabase/server";
 
 export class ClientService {
   private static table = "clients";
 
   static async getAll() {
-    const supabase = await getServerClient();
+    const supabase = await getAdminClient();
     const { data, error } = await supabase
       .from(this.table)
       .select("*")

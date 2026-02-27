@@ -1,17 +1,16 @@
 import { resources } from "@/config/resources";
-import { notFound, redirect } from "next/navigation";
-import FormLayout from "@/components/admin/FormLayout";
-import { createResource } from "@/app/actions/resources"; // We will create this
-import ResourceFormClient from "@/components/admin/ResourceFormClient"; // Wrapper for logic
+import { notFound } from "next/navigation";
+import ResourceFormClient from "@/components/admin/ResourceFormClient";
 
 interface PageProps {
-  params: {
+  params: Promise<{
     resource: string;
-  };
+  }>;
 }
 
-export default function CreateResourcePage({ params }: PageProps) {
-  const resourceName = params.resource;
+export default async function CreateResourcePage({ params }: PageProps) {
+  const resolvedParams = await params;
+  const resourceName = resolvedParams.resource;
   const config = resources.find((r) => r.name === resourceName);
 
   if (!config) {
@@ -20,11 +19,11 @@ export default function CreateResourcePage({ params }: PageProps) {
 
   return (
     <div>
-       <div className="mb-6">
+      <div className="mb-6">
         <h1 className="text-2xl font-bold">Create {config.singular}</h1>
       </div>
-      <ResourceFormClient 
-        config={config} 
+      <ResourceFormClient
+        config={config}
         mode="create"
       />
     </div>

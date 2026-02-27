@@ -66,11 +66,5 @@ export interface SiteSEOConfig {
  */
 export interface SEOConfig {
     site: SiteSEOConfig;
-    pages: {
-        home: PageSEOConfig;
-        about: PageSEOConfig;
-        works: PageSEOConfig;
-        blog: PageSEOConfig;
-        contact: PageSEOConfig;
-    };
+    pages: Record<string, PageSEOConfig>;
 }
