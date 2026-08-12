@@ -7,8 +7,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen?style=flat-square)](https://nodejs.org/)
 
-**A zero-config CLI to scaffold production-ready Next.js applications.**  
-Choose between a marketing landing page, a Supabase admin panel, or both — in one command.
+**A zero-config CLI for production-ready Next.js applications.**
+
+Scaffold a web app, an admin panel, or both — backed by Supabase or Contentful.
 
 [Quick Start](#-quick-start) · [Templates](#-templates) · [Project Structure](#-project-structure) · [Environment Variables](#-environment-variables) · [Deployment](#-deployment) · [Contributing](#-contributing)
 
@@ -23,14 +24,15 @@ Choose between a marketing landing page, a Supabase admin panel, or both — in 
 - [CLI Reference](#-cli-reference)
 - [Templates](#-templates)
   - [Web — Landing Page](#-web--landing-page)
-  - [Admin — Supabase Panel](#-admin--supabase-admin-panel)
+  - [Admin — CMS Panel](#-admin--cms-panel)
   - [Full Stack](#-full-stack)
 - [Project Structure](#-project-structure)
   - [Web Template Structure](#web-template)
   - [Admin Template Structure](#admin-template)
 - [Environment Variables](#-environment-variables)
-  - [Web Template](#web-template-env)
-  - [Admin Template](#admin-template-env)
+  - [Supabase Web Template](#supabase-web-template-env)
+  - [Supabase Admin Template](#supabase-admin-template-env)
+  - [Contentful Projects](#contentful-projects)
 - [Development](#-development)
 - [Deployment](#-deployment)
 - [FAQ](#-faq)
@@ -45,11 +47,14 @@ Choose between a marketing landing page, a Supabase admin panel, or both — in 
 **`create-nextjs-stack`** handles the tedious setup so that you can start building immediately. In a single command it:
 
 - Scaffolds a fully configured Next.js 16 application
+- Lets you choose Supabase or Contentful without changing the UI layer
 - Copies `.env.example` to `.env` so credentials are ready to fill
 - Sets the project name inside `package.json` automatically
 - Prints exact next steps so you never have to guess
 
-The result is a codebase that follows real-world best practices — App Router, TypeScript, Tailwind CSS 4, server-side Supabase auth, SEO metadata, and more — without any manual wiring.
+The result follows real-world practices — App Router, TypeScript, Tailwind CSS 4,
+a typed service layer, CMS-aware authentication, SEO metadata, and more — without
+manual wiring.
 
 ---
 
@@ -74,7 +79,10 @@ The interactive CLI will guide you:
 ? Which template would you like to generate?
   ❯ Full Stack (Web + Admin)
     Web Only (Next.js Landing)
-    Admin Only (Supabase Admin)
+    Admin Only (CMS Admin)
+? Which data source would you like to use?
+  ❯ Supabase
+    Contentful
 ```
 
 After scaffolding:
@@ -172,7 +180,7 @@ A production-ready Next.js marketing website starter.
 | Language         | TypeScript 5                                                                                    | Strict mode                  |
 | Styling          | [Tailwind CSS 4](https://tailwindcss.com/)                                                      | `@tailwindcss/postcss`       |
 | State Management | [Redux Toolkit](https://redux-toolkit.js.org/)                                                  | Typed slices + actions       |
-| Database & Auth  | [Supabase](https://supabase.com/)                                                               | PostgreSQL + SSR auth        |
+| Content          | [Supabase](https://supabase.com/) or [Contentful](https://www.contentful.com/)                  | Selected with `--cms`        |
 | Media            | [Cloudinary](https://cloudinary.com/) + `next-cloudinary`                                       | Optimized image delivery     |
 | Email            | [Resend](https://resend.com/)                                                                   | Transactional emails         |
 | Analytics        | [Google Analytics](https://analytics.google.com/)                                               | Via `@next/third-parties`    |
@@ -185,7 +193,7 @@ A production-ready Next.js marketing website starter.
 - **⚡ Turbopack** for sub-second dev rebuilds and faster production builds
 - **🔍 Full SEO Suite** — dynamic `metadata` API, `sitemap.ts`, `robots.ts`, canonical URLs, and Open Graph tags all configurable from environment variables
 - **🎯 Service Layer** — all external API calls go through `src/lib/services/`, keeping components clean
-- **🗄 Supabase SSR** — server-side Supabase client with cookie-based session handling, compatible with Next.js App Router
+- **🗄 Pluggable Content Layer** — Supabase SSR by default, or Contentful Delivery/Preview APIs with draft mode, rich text, and webhook revalidation
 - **🖼 Cloudinary Integration** — ready-to-use `CldImage` and `CldUploadWidget` components via `next-cloudinary`
 - **📬 Email Service** — Resend integration with typed email helpers in the service layer
 - **🔄 Redux Store** — fully typed store with actions, reducers, and providers already wired in
@@ -194,9 +202,9 @@ A production-ready Next.js marketing website starter.
 
 ---
 
-### 🛠 Admin — Supabase Admin Panel
+### 🛠 Admin — CMS Panel
 
-A minimal, extensible admin dashboard for managing your Supabase data.
+A minimal, extensible admin dashboard for managing Supabase or Contentful data.
 
 #### Tech Stack
 
@@ -205,7 +213,8 @@ A minimal, extensible admin dashboard for managing your Supabase data.
 | Framework       | [Next.js 16](https://nextjs.org/)                           | App Router                |
 | Language        | TypeScript 5                                                |                           |
 | Styling         | [Tailwind CSS 4](https://tailwindcss.com/)                  | `tailwind-merge` + `clsx` |
-| Database & Auth | [Supabase](https://supabase.com/)                           | PostgreSQL + SSR auth     |
+| Content         | [Supabase](https://supabase.com/) or [Contentful](https://www.contentful.com/) | Selected with `--cms` |
+| Authentication  | Supabase Auth or Auth.js credentials                       | Matches the data source  |
 | Media           | [Cloudinary](https://cloudinary.com/)                       | Image uploads             |
 | Forms           | [React Hook Form](https://react-hook-form.com/)             |                           |
 | Notifications   | [React Toastify](https://fkhadra.github.io/react-toastify/) | Toast alerts              |
@@ -214,7 +223,8 @@ A minimal, extensible admin dashboard for managing your Supabase data.
 
 #### Feature Highlights
 
-- **🔐 Server-side Auth** — Supabase SSR client; sessions stored in HTTP-only cookies
+- **🔐 Server-side Auth** — Supabase SSR sessions or Auth.js credentials with bcrypt password hashing
+- **🔌 Shared CRUD Contract** — the same forms and resource configuration work with Supabase and Contentful
 - **🛡 Route Protection** — `middleware.ts` guards all dashboard routes; unauthenticated users are redirected to `/login`
 - **📊 Dashboard Layout** — sidebar + header shell with nested route groups `(auth)` and `(dashboard)`
 - **⚙ Server Actions** — data mutations use Next.js Server Actions inside `app/actions/`, keeping client bundles small
@@ -231,7 +241,7 @@ The `full-stack` template scaffolds both the Web and Admin templates into two in
 ```
 my-app/
 ├── web/        ← Next.js landing page (port 3000)
-└── admin/      ← Supabase admin panel (port 3001)
+└── admin/      ← CMS admin panel (port 3001)
 ```
 
 Each sub-project is **completely independent** — separate `package.json`, separate `.env`, separate `node_modules` and dev server. There is no shared monorepo config by design; this keeps the scaffold simple and avoids coupling.
@@ -243,6 +253,10 @@ Each sub-project is **completely independent** — separate `package.json`, sepa
 ## 📁 Project Structure
 
 ### Web Template
+
+The tree below shows the default Supabase output. With `--cms contentful`, the
+CLI replaces `src/lib/supabase/` with `src/lib/contentful/`, adds preview and
+webhook routes, rich-text rendering, and Contentful setup/type-generation tools.
 
 ```
 my-app/
@@ -293,6 +307,11 @@ my-app/
 ```
 
 ### Admin Template
+
+The tree below shows the default Supabase output. With `--cms contentful`, the
+CLI replaces the Supabase layer with the Contentful Management API, swaps auth
+to Auth.js credentials, removes the users resource, and adds content-model setup
+and password-hashing scripts.
 
 ```
 my-admin/
@@ -349,7 +368,7 @@ my-admin/
 
 The CLI automatically copies `.env.example` → `.env` during scaffolding. Open `.env` and replace the placeholder values with your real credentials.
 
-### Web Template Env
+### Supabase Web Template Env
 
 ```bash
 # ─── Email (Resend) ────────────────────────────────────────────────────────────
@@ -379,7 +398,7 @@ NEXT_PUBLIC_SITE_URL=https://yourdomain.com     # Used for canonical URLs & OG t
 NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX                  # Google Analytics Measurement ID
 ```
 
-### Admin Template Env
+### Supabase Admin Template Env
 
 ```bash
 # ─── Supabase ──────────────────────────────────────────────────────────────────
@@ -393,6 +412,34 @@ CLOUDINARY_API_KEY=000000000000000
 CLOUDINARY_API_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
 ```
+
+### Contentful Projects
+
+When `--cms contentful` is selected, Supabase variables are replaced with the
+appropriate Contentful and Auth.js settings. The generated `CONTENTFUL.md`
+contains the complete setup guide.
+
+```bash
+# Shared Contentful settings
+CONTENTFUL_SPACE_ID=your-space-id
+CONTENTFUL_ENVIRONMENT=master
+CONTENTFUL_MANAGEMENT_TOKEN=your-content-management-token
+
+# Web: delivery, preview and webhook support
+CONTENTFUL_DELIVERY_TOKEN=your-delivery-token
+CONTENTFUL_PREVIEW_TOKEN=your-preview-token
+CONTENTFUL_PREVIEW_SECRET=your-random-preview-secret
+CONTENTFUL_WEBHOOK_SECRET=your-random-webhook-secret
+
+# Admin: Auth.js credentials
+AUTH_SECRET=your-random-auth-secret
+ADMIN_EMAIL=admin@yourdomain.com
+ADMIN_PASSWORD_HASH=your-bcrypt-password-hash
+```
+
+Bootstrap the Contentful model with `npm run contentful:setup`. In the web
+template, generate entry types with `npm run contentful:types`; in the admin
+template, create a password hash with `npm run auth:hash -- "your-password"`.
 
 > ⚠️ **Security:** Variables prefixed with `NEXT_PUBLIC_` are bundled into the client. Never prefix `SERVICE_ROLE_KEY` or `API_SECRET` with `NEXT_PUBLIC_`.
 
@@ -423,6 +470,7 @@ npm run lint     # Run ESLint across the project
 | Service                                          | Free Tier | Setup Steps                                                             |
 | ------------------------------------------------ | --------- | ----------------------------------------------------------------------- |
 | [Supabase](https://supabase.com)                 | ✅ Yes    | Create project → copy URL and anon key from **Project Settings → API**  |
+| [Contentful](https://www.contentful.com/)         | ✅ Yes    | Create a space → add API and management tokens → run the setup script  |
 | [Cloudinary](https://cloudinary.com)             | ✅ Yes    | Create account → copy cloud name and API credentials from **Dashboard** |
 | [Resend](https://resend.com)                     | ✅ Yes    | Create account → add domain (or use sandbox) → create API key           |
 | [Google Analytics](https://analytics.google.com) | ✅ Yes    | Create property → copy Measurement ID (`G-XXXXXXXXXX`)                  |
@@ -433,7 +481,9 @@ npm run lint     # Run ESLint across the project
 
 ### Vercel (Recommended)
 
-The Web template is optimised for Vercel — App Router, Edge Middleware, and Supabase SSR all work without any additional configuration.
+The Web template is optimised for Vercel — App Router, Edge Middleware,
+Supabase SSR, and Contentful preview/revalidation routes work with standard
+environment-variable configuration.
 
 1. Push your project to GitHub, GitLab, or Bitbucket.
 2. Go to [vercel.com/new](https://vercel.com/new) and import the repository.
@@ -502,6 +552,13 @@ A: Not yet — TypeScript only for now. A `--javascript` flag is planned for a f
 
 **Q: Can I use a different CSS framework?**  
 A: The templates are designed around Tailwind CSS 4. Swapping it out is possible but requires manual work. Additional styling options are on the roadmap.
+
+**Q: Can I switch between Supabase and Contentful later?**
+
+A: The generated UI and service contracts intentionally share the same resource
+shape, but the CLI applies the selected data-source files during scaffolding.
+Create a fresh project with the other `--cms` value and migrate custom code when
+you need to switch an existing application.
 
 **Q: The CLI overwrote my directory, can I undo it?**  
 A: The CLI asks for confirmation before overwriting. If you confirmed by mistake, restore from git or a backup — the CLI does not keep a copy.

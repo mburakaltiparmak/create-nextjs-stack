@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-08-12
+
+### Documentation
+
+- Updated the npm-facing README to present Supabase and Contentful as first-class data-source options throughout the overview, templates, environment setup, and deployment sections.
+
 ## [0.3.3] - 2026-08-12
 
 ### Fixed
