@@ -1,0 +1,55 @@
+{
+  "name": "contentful",
+  "label": "Contentful",
+  "description": "Swaps the Supabase data layer for Contentful. Web reads through the Content Delivery API, admin writes through the Content Management API, and admin auth moves to Auth.js credentials.",
+  "targets": {
+    "web": {
+      "remove": [
+        "src/lib/supabase",
+        "src/lib/services/users.service.ts"
+      ],
+      "dependencies": {
+        "@contentful/rich-text-react-renderer": "^16.0.1",
+        "@contentful/rich-text-types": "^17.1.0",
+        "contentful": "^11.5.16"
+      },
+      "devDependencies": {
+        "cf-content-types-generator": "^2.15.5",
+        "contentful-migration": "^4.25.4"
+      },
+      "removeDependencies": [
+        "@supabase/ssr",
+        "@supabase/supabase-js"
+      ],
+      "scripts": {
+        "contentful:setup": "node --env-file=.env contentful/setup.mjs",
+        "contentful:types": "node --env-file=.env contentful/generate-types.mjs"
+      }
+    },
+    "admin": {
+      "remove": [
+        "lib/supabase",
+        "lib/services/users.service.ts",
+        "supabase_schema.sql",
+        "supabase_mock_data.sql"
+      ],
+      "dependencies": {
+        "bcryptjs": "^3.0.2",
+        "contentful": "^11.5.16",
+        "contentful-management": "^11.52.2",
+        "next-auth": "^5.0.0-beta.29"
+      },
+      "devDependencies": {
+        "contentful-migration": "^4.25.4"
+      },
+      "removeDependencies": [
+        "@supabase/ssr",
+        "@supabase/supabase-js"
+      ],
+      "scripts": {
+        "auth:hash": "node scripts/hash-password.mjs",
+        "contentful:setup": "node --env-file=.env contentful/setup.mjs"
+      }
+    }
+  }
+}

@@ -99,6 +99,7 @@ Arguments:
 
 Options:
   -t, --template <type>  Template to scaffold: web | admin | full-stack
+  -c, --cms <type>       Data source: supabase | contentful  (default: supabase)
   -v, --version          Print CLI version
   -h, --help             Show help
 ```
@@ -106,17 +107,44 @@ Options:
 ### Examples
 
 ```bash
-# Interactive — prompts for name and template
+# Interactive — prompts for name, template and data source
 npx create-nextjs-stack
 
-# Named project, interactive template selection
+# Named project, interactive selection
 npx create-nextjs-stack my-app
 
 # Fully non-interactive
 npx create-nextjs-stack my-app --template web
 npx create-nextjs-stack my-app --template admin
 npx create-nextjs-stack my-app --template full-stack
+
+# Contentful instead of Supabase
+npx create-nextjs-stack my-app --template full-stack --cms contentful
 ```
+
+### Data Sources
+
+The template you pick decides *what* gets scaffolded; `--cms` decides *where the
+content lives*. Both templates work with either data source — pages, components
+and the admin CRUD are identical.
+
+| | Supabase (default) | Contentful |
+| --- | --- | --- |
+| Content storage | Postgres tables | Contentful content types |
+| Web reads through | `@supabase/ssr` server client | Content Delivery API |
+| Admin writes through | Supabase client | Content Management API |
+| Admin auth | Supabase Auth | Auth.js credentials (`ADMIN_EMAIL` + bcrypt hash) |
+| Schema bootstrap | `supabase_schema.sql` | `npm run contentful:setup` |
+| Draft preview | — | `/api/preview` + Preview API |
+| On-publish revalidation | `/api/revalidate` | Contentful webhook → `/api/revalidate/contentful` |
+| Rich text | — | `body` field + `<RichText />` |
+
+Field and content type names are deliberately kept identical between the two
+(`products`, `featured_image_url`, `category_id`, …), so switching data sources
+does not ripple into your UI code.
+
+A scaffolded Contentful project ships with a `CONTENTFUL.md` covering space
+setup, tokens, webhooks and the admin login.
 
 ### Overwrite Behaviour
 

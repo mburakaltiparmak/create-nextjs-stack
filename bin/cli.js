@@ -7,6 +7,12 @@ const prompts = require("prompts");
 const chalk = require("chalk");
 const ora = require("ora");
 const { execSync } = require("child_process");
+const ui = require("./ui");
+const { applyModule } = require("./modules");
+
+// Prompt'ları atlamamız gereken ortamlar (CI test koşusu gibi).
+const isInteractive =
+  process.env.NODE_ENV !== "test" && process.env.VITEST !== "true";
 
 function detectPackageManager() {
   const userAgent = process.env.npm_config_user_agent || "";
@@ -29,11 +35,11 @@ function isPackageManagerAvailable(pm) {
 const packageJson = require("../package.json");
 
 process.on("SIGINT", () => {
-  console.log(chalk.red("\n\nOperation cancelled."));
+  ui.showCancelled();
   process.exit(1);
 });
-const updateNotifier = require("update-notifier");
 
+const updateNotifier = require("update-notifier");
 const notifier = updateNotifier({ pkg: packageJson, updateCheckInterval: 1000 * 60 * 60 * 24 });
 if (notifier.update) {
   notifier.notify();
@@ -42,24 +48,31 @@ if (notifier.update) {
 program
   .name("create-nextjs-stack")
   .version(packageJson.version, "-v, --version", "Output the current version")
-  .description("Scaffold a new Next.js Project with Supabase Admin support")
+  .description("Scaffold a new Next.js Project with a Supabase or Contentful backend")
   .argument("[project-directory]", "Directory to create the project in")
   .option("-t, --template <type>", "Template type: web, admin, or full-stack")
+  .option("-c, --cms <type>", "Data source: supabase or contentful")
   .action(async (projectDirectory, options) => {
+
+    // Banner — en başta göster
+    ui.showBanner(packageJson.version);
+
     const validTemplates = ["web", "admin", "full-stack"];
     if (options.template && !validTemplates.includes(options.template)) {
-      console.log(
-        chalk.red(
-          `\nInvalid template: "${options.template}"\n` +
-            `Valid options: ${validTemplates.join(", ")}\n`
-        )
-      );
+      ui.showError(`Invalid template: "${options.template}"\nValid options: ${validTemplates.join(", ")}`);
+      process.exit(1);
+    }
+
+    const validCms = ["supabase", "contentful"];
+    if (options.cms && !validCms.includes(options.cms)) {
+      ui.showError(`Invalid data source: "${options.cms}"\nValid options: ${validCms.join(", ")}`);
       process.exit(1);
     }
 
     let targetDir = projectDirectory;
 
     // 1. Get Project Name / Directory
+    ui.sectionHeader(1, 4, "Project Setup");
     if (!targetDir) {
       const res = await prompts({
         type: "text",
@@ -71,7 +84,7 @@ program
     }
 
     if (!targetDir) {
-      console.log(chalk.red("Operation cancelled. No project name provided."));
+      ui.showCancelled();
       process.exit(1);
     }
 
@@ -81,6 +94,7 @@ program
     // 2. Select Template Type
     let templateType = options.template;
 
+    ui.sectionHeader(2, 4, "Choose Template");
     if (!templateType) {
       const res = await prompts({
         type: "select",
@@ -88,18 +102,17 @@ program
         message: "Which template would you like to generate?",
         choices: [
           {
-            title: "Full Stack (Web + Admin)",
+            title: "🚀  Full Stack (Web + Admin)",
             value: "full-stack",
-            description:
-              "Creates both web and admin projects in subdirectories",
+            description: "Creates both web and admin projects in subdirectories",
           },
           {
-            title: "Web Only (Next.js Landing)",
+            title: "🌐  Web Only (Next.js Landing)",
             value: "web",
             description: "Just the landing page/web application",
           },
           {
-            title: "Admin Only (Supabase Admin)",
+            title: "⚙️   Admin Only (Supabase Admin)",
             value: "admin",
             description: "Just the admin panel",
           },
@@ -110,15 +123,47 @@ program
     }
 
     if (!templateType) {
-      console.log(chalk.red("Operation cancelled."));
+      ui.showCancelled();
       process.exit(1);
     }
 
-    console.log(
-      `\nCreating a new ${chalk.cyan(templateType)} project in ${chalk.green(root)}.\n`,
-    );
+    // 3. Select Data Source (CMS)
+    let cms = options.cms;
 
-    // 3. Ensure Directory exists
+    if (!cms) {
+      if (isInteractive) {
+        ui.sectionHeader(3, 4, "Choose Data Source");
+        const res = await prompts({
+          type: "select",
+          name: "cms",
+          message: "Where should your content live?",
+          choices: [
+            {
+              title: "🗄️   Supabase (Postgres + Auth)",
+              value: "supabase",
+              description: "Relational tables, Supabase Auth, SQL schema included",
+            },
+            {
+              title: "📝  Contentful (Headless CMS)",
+              value: "contentful",
+              description: "Contentful content model, Auth.js admin login, preview + webhooks",
+            },
+          ],
+          initial: 0,
+        });
+        cms = res.cms;
+
+        if (!cms) {
+          ui.showCancelled();
+          process.exit(1);
+        }
+      } else {
+        // Non-interactive (CI / test): mevcut davranışı koru.
+        cms = "supabase";
+      }
+    }
+
+    // 4. Ensure Directory exists
     if (fs.existsSync(root)) {
       const files = fs.readdirSync(root);
       if (files.length > 0) {
@@ -130,7 +175,7 @@ program
         });
 
         if (!shouldOverwrite) {
-          console.log(chalk.red("Aborting installation."));
+          ui.showCancelled();
           process.exit(1);
         }
         fs.emptyDirSync(root);
@@ -139,12 +184,11 @@ program
       fs.ensureDirSync(root);
     }
 
-    const spinner = ora(`Scaffolding ${templateType}...`).start();
+    const spinner = ora(`Scaffolding ${templateType} with ${cms}...`).start();
 
     try {
       const templatesDir = path.join(__dirname, "..", "templates");
 
-      // Helper function to copy a template
       const copyTemplate = (sourceName, destPath) => {
         const source = path.join(templatesDir, sourceName);
         fs.copySync(source, destPath, {
@@ -161,14 +205,18 @@ program
           },
         });
 
-        // Handle .env.example -> .env
+        // Supabase base template'in kendisi; diğer veri kaynakları overlay olarak gelir.
+        // .env üretiminden önce çalışmalı — overlay kendi .env.example'ını getirebilir.
+        if (cms !== "supabase") {
+          applyModule(destPath, cms, sourceName);
+        }
+
         const envExample = path.join(destPath, ".env.example");
         const envTarget = path.join(destPath, ".env");
         if (fs.existsSync(envExample)) {
           fs.copySync(envExample, envTarget);
         }
 
-        // Update package.json name
         const pkgPath = path.join(destPath, "package.json");
         if (fs.existsSync(pkgPath)) {
           const pkg = fs.readJsonSync(pkgPath);
@@ -178,18 +226,12 @@ program
       };
 
       if (templateType === "full-stack") {
-        // Create subdirectories
         const webDir = path.join(root, "web");
         const adminDir = path.join(root, "admin");
-
         fs.ensureDirSync(webDir);
         fs.ensureDirSync(adminDir);
-
         copyTemplate("web", webDir);
         copyTemplate("admin", adminDir);
-
-        // Create a root package.json for convenience (workspaces)?
-        // Optional, but let's at least leave a README
         fs.writeFileSync(
           path.join(root, "README.md"),
           `# ${appName}\n\nThis project contains both Web and Admin applications.\n\n- [Web](./web)\n- [Admin](./admin)`,
@@ -203,24 +245,27 @@ program
       spinner.succeed("Scaffolding complete!");
 
       // Skip install prompts if testing
-      if (process.env.NODE_ENV !== "test" && process.env.VITEST !== "true") {
+      if (isInteractive) {
         const detectedPm = detectPackageManager();
 
+        ui.sectionHeader(4, 4, "Package Manager");
         const { packageManager } = await prompts({
           type: "select",
           name: "packageManager",
           message: "Which package manager would you like to use?",
           choices: [
-            { title: "npm", value: "npm" },
+            { title: "npm",  value: "npm"  },
             { title: "yarn", value: "yarn" },
             { title: "pnpm", value: "pnpm" },
-            { title: "bun", value: "bun" },
+            { title: "bun",  value: "bun"  },
           ].filter((choice) => isPackageManagerAvailable(choice.value)),
-          initial: ["npm", "yarn", "pnpm", "bun"].indexOf(detectedPm) >= 0 ? ["npm", "yarn", "pnpm", "bun"].indexOf(detectedPm) : 0,
+          initial: ["npm", "yarn", "pnpm", "bun"].indexOf(detectedPm) >= 0
+            ? ["npm", "yarn", "pnpm", "bun"].indexOf(detectedPm)
+            : 0,
         });
 
         if (!packageManager) {
-          console.log(chalk.red("\nOperation cancelled."));
+          ui.showCancelled();
           process.exit(1);
         }
 
@@ -232,7 +277,7 @@ program
         });
 
         if (shouldInstall === undefined) {
-          console.log(chalk.red("\nOperation cancelled."));
+          ui.showCancelled();
           process.exit(1);
         }
 
@@ -244,74 +289,40 @@ program
 
           for (const target of installTargets) {
             const dirName = path.basename(target);
-            const installSpinner = ora(
-              `Installing dependencies in ${dirName}...`,
-            ).start();
+            const installSpinner = ora(`Installing dependencies in ${dirName}...`).start();
 
             try {
               const installCmd =
                 packageManager === "yarn" ? "yarn" : `${packageManager} install`;
-
-              execSync(installCmd, {
-                cwd: target,
-                stdio: "pipe",
-              });
-
-              installSpinner.succeed(`Dependencies installed in ${dirName}`);
-            } catch (error) {
-              installSpinner.fail(`Failed to install dependencies in ${dirName}`);
-              console.log(
-                chalk.yellow(
-                  `  You can install manually: cd ${dirName} && ${packageManager} install`,
-                ),
-              );
+              execSync(installCmd, { cwd: target, stdio: "pipe" });
+              installSpinner.stop();
+              ui.showInstallResult(dirName, true, packageManager);
+            } catch (err) {
+              installSpinner.stop();
+              ui.showInstallResult(dirName, false, packageManager);
             }
           }
         }
-        
-        console.log(`\n${chalk.green("Success!")} Created project at ${root}\n`);
-        console.log("Next steps:");
-        console.log(chalk.cyan(`  cd ${appName}`));
 
-        if (templateType === "full-stack") {
-          console.log("  Then go to either web or admin folder:");
-          console.log(chalk.cyan(`  cd web`));
-          if (!shouldInstall) {
-            console.log(chalk.cyan(`  ${packageManager || "npm"} install`));
-          }
-          console.log(chalk.cyan(`  ${packageManager || "npm"} run dev`));
-        } else {
-          if (!shouldInstall) {
-            console.log(chalk.cyan(`  ${packageManager || "npm"} install`));
-          }
-          console.log(chalk.cyan(`  ${packageManager || "npm"} run dev`));
-        }
+        ui.showSuccess({ appName, templateType, cms, root, packageManager });
+        ui.showNextSteps({ appName, templateType, cms, packageManager, installed: shouldInstall });
+        ui.showFooter();
+
       } else {
         // Fallback for tests
-        console.log(`\nSuccess! Created project at ${root}\n`);
-        console.log("Next steps:");
-        console.log(chalk.cyan(`  cd ${appName}`));
-        if (templateType === "full-stack") {
-          console.log("  Then go to either web or admin folder:");
-          console.log(chalk.cyan(`  cd web`));
-          console.log(chalk.cyan(`  npm install`));
-          console.log(chalk.cyan(`  npm run dev`));
-        } else {
-          console.log(chalk.cyan(`  npm install`));
-          console.log(chalk.cyan(`  npm run dev`));
-        }
+        ui.showSuccess({ appName, templateType, cms, root, packageManager: "npm" });
+        ui.showNextSteps({ appName, templateType, cms, packageManager: "npm", installed: false });
       }
+
     } catch (error) {
       spinner.fail("Error scaffolding project.");
 
       if (error.code === "EACCES") {
-        console.error(
-          chalk.red("\nPermission denied. Try running with elevated privileges.")
-        );
+        ui.showError("Permission denied. Try running with elevated privileges.");
       } else if (error.code === "ENOSPC") {
-        console.error(chalk.red("\nNo disk space available."));
+        ui.showError("No disk space available.");
       } else {
-        console.error(chalk.red(`\n${error.message || error}`));
+        ui.showError(error.message || String(error));
       }
 
       if (process.env.DEBUG) {

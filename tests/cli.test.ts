@@ -23,6 +23,17 @@ const scaffoldTemplate = async (
   return projectPath;
 };
 
+// Helper: veri kaynağı seçimiyle scaffold et
+const scaffoldWithCms = async (
+  name: string,
+  template: "web" | "admin" | "full-stack",
+  cms: "supabase" | "contentful"
+) => {
+  const projectPath = path.join(TEST_DIR, name);
+  await scaffold([projectPath, "--template", template, "--cms", cms]);
+  return projectPath;
+};
+
 // ─── Setup / Teardown ─────────────────────────────────────────────────────────
 
 afterEach(async () => {
@@ -840,5 +851,355 @@ describe("Edge Cases", () => {
     const p = path.join(TEST_DIR, "cwd-test");
     await scaffold([p, "--template", "admin"]);
     expect(fs.existsSync(path.join(p, "package.json"))).toBe(true);
+  });
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 10. CONTENTFUL VERİ KAYNAĞI
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// Bir dizindeki tüm kaynak dosyalarını gezer (node_modules hariç).
+const walkSourceFiles = (dir: string): string[] => {
+  const out: string[] = [];
+
+  const visit = (current: string) => {
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      if (entry.name === "node_modules" || entry.name === ".next") continue;
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        visit(full);
+      } else if (/\.(ts|tsx|mjs|cjs|js)$/.test(entry.name)) {
+        out.push(full);
+      }
+    }
+  };
+
+  if (fs.existsSync(dir)) visit(dir);
+  return out;
+};
+
+describe("Contentful Data Source", () => {
+  describe("CLI surface", () => {
+    it("--help should list --cms option", async () => {
+      const { stdout } = await scaffold(["--help"]);
+      expect(stdout).toMatch(/--cms/);
+    });
+
+    it("should reject an invalid data source", async () => {
+      const projectPath = path.join(TEST_DIR, "invalid-cms");
+      try {
+        await scaffold([projectPath, "--template", "web", "--cms", "strapi"]);
+        expect.unreachable("Should have thrown an error");
+      } catch (error) {
+        const e = error as ExecaError;
+        expect(e.exitCode).not.toBe(0);
+      }
+    });
+
+    it("should accept both data sources", async () => {
+      for (const cms of ["supabase", "contentful"]) {
+        const projectPath = path.join(TEST_DIR, `valid-cms-${cms}`);
+        const result = await scaffold([
+          projectPath,
+          "--template",
+          "web",
+          "--cms",
+          cms,
+        ]);
+        expect(result.exitCode).toBe(0);
+        try {
+          await fs.remove(projectPath);
+        } catch (err) {
+          // Ignore EBUSY on Windows during test, afterEach will eventually clear it
+        }
+      }
+    });
+
+    it("should default to supabase when --cms is omitted", async () => {
+      const p = await scaffoldTemplate("cms-default", "web");
+      expect(fs.existsSync(path.join(p, "src/lib/supabase"))).toBe(true);
+      expect(fs.existsSync(path.join(p, "src/lib/contentful"))).toBe(false);
+    });
+
+    it("should still name the package after the directory", async () => {
+      const p = await scaffoldWithCms("my-contentful-site", "web", "contentful");
+      const pkg = fs.readJsonSync(path.join(p, "package.json"));
+      expect(pkg.name).toBe("my-contentful-site");
+    });
+  });
+
+  describe("Web template", () => {
+    it("should contain the Contentful data layer", async () => {
+      const p = await scaffoldWithCms("cf-web-layer", "web", "contentful");
+      const requiredPaths = [
+        "src/lib/contentful/client.ts",
+        "src/lib/contentful/constants.ts",
+        "src/lib/contentful/mappers.ts",
+        "src/lib/contentful/preview.ts",
+        "src/lib/contentful/types.ts",
+      ];
+      for (const fp of requiredPaths) {
+        expect(fs.existsSync(path.join(p, fp)), `Missing: ${fp}`).toBe(true);
+      }
+    });
+
+    it("should remove the Supabase data layer", async () => {
+      const p = await scaffoldWithCms("cf-web-nosupa", "web", "contentful");
+      expect(fs.existsSync(path.join(p, "src/lib/supabase"))).toBe(false);
+      expect(
+        fs.existsSync(path.join(p, "src/lib/services/users.service.ts"))
+      ).toBe(false);
+    });
+
+    it("should keep the service layer intact", async () => {
+      const p = await scaffoldWithCms("cf-web-services", "web", "contentful");
+      for (const service of ["categories", "clients", "products", "projects"]) {
+        expect(
+          fs.existsSync(path.join(p, `src/lib/services/${service}.service.ts`)),
+          `Missing: ${service}.service.ts`
+        ).toBe(true);
+      }
+    });
+
+    it("should leave no imports of the removed Supabase layer", async () => {
+      const p = await scaffoldWithCms("cf-web-imports", "web", "contentful");
+      const offenders = walkSourceFiles(path.join(p, "src")).filter((file) =>
+        fs.readFileSync(file, "utf-8").includes("@/lib/supabase")
+      );
+      expect(offenders, `Dangling imports in: ${offenders.join(", ")}`).toEqual(
+        []
+      );
+    });
+
+    it("should leave no imports of removed services", async () => {
+      const p = await scaffoldWithCms("cf-web-svc-imports", "web", "contentful");
+      const offenders = walkSourceFiles(path.join(p, "src")).filter((file) =>
+        fs.readFileSync(file, "utf-8").includes("services/users.service")
+      );
+      expect(
+        offenders,
+        `Dangling users.service imports in: ${offenders.join(", ")}`
+      ).toEqual([]);
+    });
+
+    it("should contain preview and webhook routes", async () => {
+      const p = await scaffoldWithCms("cf-web-routes", "web", "contentful");
+      const requiredPaths = [
+        "src/app/api/preview/route.ts",
+        "src/app/api/preview/disable/route.ts",
+        "src/app/api/revalidate/contentful/route.ts",
+        "src/app/api/revalidate/route.ts", // genel amaçlı rota korunmalı
+      ];
+      for (const fp of requiredPaths) {
+        expect(fs.existsSync(path.join(p, fp)), `Missing: ${fp}`).toBe(true);
+      }
+    });
+
+    it("should contain the rich text renderer", async () => {
+      const p = await scaffoldWithCms("cf-web-richtext", "web", "contentful");
+      expect(
+        fs.existsSync(path.join(p, "src/components/contentful/RichText.tsx"))
+      ).toBe(true);
+    });
+
+    it("should contain the content model setup scripts", async () => {
+      const p = await scaffoldWithCms("cf-web-scripts", "web", "contentful");
+      expect(fs.existsSync(path.join(p, "contentful/setup.mjs"))).toBe(true);
+      expect(fs.existsSync(path.join(p, "contentful/generate-types.mjs"))).toBe(
+        true
+      );
+      expect(
+        fs.existsSync(
+          path.join(p, "contentful/migrations/01-initial-content-model.cjs")
+        )
+      ).toBe(true);
+    });
+
+    it("should swap the dependencies", async () => {
+      const p = await scaffoldWithCms("cf-web-deps", "web", "contentful");
+      const pkg = fs.readJsonSync(path.join(p, "package.json"));
+
+      expect(pkg.dependencies["contentful"]).toBeDefined();
+      expect(
+        pkg.dependencies["@contentful/rich-text-react-renderer"]
+      ).toBeDefined();
+      expect(pkg.dependencies["@supabase/supabase-js"]).toBeUndefined();
+      expect(pkg.dependencies["@supabase/ssr"]).toBeUndefined();
+
+      // Ortak bağımlılıklar korunmalı
+      expect(pkg.dependencies["next"]).toBeDefined();
+      expect(pkg.dependencies["@reduxjs/toolkit"]).toBeDefined();
+    });
+
+    it("should add the Contentful scripts", async () => {
+      const p = await scaffoldWithCms("cf-web-pkgscripts", "web", "contentful");
+      const pkg = fs.readJsonSync(path.join(p, "package.json"));
+      expect(pkg.scripts["contentful:setup"]).toBeDefined();
+      expect(pkg.scripts["contentful:types"]).toBeDefined();
+      // Mevcut script'ler ezilmemeli
+      expect(pkg.scripts.dev).toBeDefined();
+      expect(pkg.scripts.build).toBeDefined();
+    });
+
+    it(".env should carry Contentful variables and drop Supabase ones", async () => {
+      const p = await scaffoldWithCms("cf-web-env", "web", "contentful");
+      const env = fs.readFileSync(path.join(p, ".env"), "utf-8");
+
+      expect(env).toContain("CONTENTFUL_SPACE_ID");
+      expect(env).toContain("CONTENTFUL_DELIVERY_TOKEN");
+      expect(env).toContain("CONTENTFUL_PREVIEW_TOKEN");
+      expect(env).toContain("CONTENTFUL_WEBHOOK_SECRET");
+      expect(env).not.toContain("NEXT_PUBLIC_SUPABASE_URL");
+
+      // Veri kaynağından bağımsız değişkenler korunmalı
+      expect(env).toContain("NEXT_PUBLIC_SITE_URL");
+      expect(env).toContain("CLOUDINARY_API_KEY");
+    });
+  });
+
+  describe("Admin template", () => {
+    it("should contain the Auth.js layer", async () => {
+      const p = await scaffoldWithCms("cf-admin-auth", "admin", "contentful");
+      const requiredPaths = [
+        "auth.ts",
+        "auth.config.ts",
+        "middleware.ts",
+        "app/api/auth/[...nextauth]/route.ts",
+      ];
+      for (const fp of requiredPaths) {
+        expect(fs.existsSync(path.join(p, fp)), `Missing: ${fp}`).toBe(true);
+      }
+    });
+
+    it("should contain the Contentful management client", async () => {
+      const p = await scaffoldWithCms("cf-admin-cma", "admin", "contentful");
+      expect(fs.existsSync(path.join(p, "lib/contentful/client.ts"))).toBe(true);
+      expect(fs.existsSync(path.join(p, "lib/services/base.service.ts"))).toBe(
+        true
+      );
+    });
+
+    it("should remove every Supabase artifact", async () => {
+      const p = await scaffoldWithCms("cf-admin-nosupa", "admin", "contentful");
+      expect(fs.existsSync(path.join(p, "lib/supabase"))).toBe(false);
+      expect(fs.existsSync(path.join(p, "supabase_schema.sql"))).toBe(false);
+      expect(fs.existsSync(path.join(p, "supabase_mock_data.sql"))).toBe(false);
+      expect(fs.existsSync(path.join(p, "lib/services/users.service.ts"))).toBe(
+        false
+      );
+    });
+
+    it("should leave no imports of the removed Supabase layer", async () => {
+      const p = await scaffoldWithCms("cf-admin-imports", "admin", "contentful");
+      const offenders = [
+        ...walkSourceFiles(path.join(p, "app")),
+        ...walkSourceFiles(path.join(p, "lib")),
+        ...walkSourceFiles(path.join(p, "components")),
+        ...walkSourceFiles(path.join(p, "hooks")),
+        ...walkSourceFiles(path.join(p, "config")),
+      ].filter((file) =>
+        fs.readFileSync(file, "utf-8").includes("@/lib/supabase")
+      );
+      expect(offenders, `Dangling imports in: ${offenders.join(", ")}`).toEqual(
+        []
+      );
+    });
+
+    it("should drop the users resource from the config", async () => {
+      const p = await scaffoldWithCms("cf-admin-config", "admin", "contentful");
+      const config = fs.readFileSync(
+        path.join(p, "config/resources.ts"),
+        "utf-8"
+      );
+      expect(config).toContain('name: "products"');
+      expect(config).not.toContain('name: "users"');
+    });
+
+    it("should swap the dependencies", async () => {
+      const p = await scaffoldWithCms("cf-admin-deps", "admin", "contentful");
+      const pkg = fs.readJsonSync(path.join(p, "package.json"));
+
+      expect(pkg.dependencies["contentful-management"]).toBeDefined();
+      expect(pkg.dependencies["next-auth"]).toBeDefined();
+      expect(pkg.dependencies["bcryptjs"]).toBeDefined();
+      expect(pkg.dependencies["@supabase/supabase-js"]).toBeUndefined();
+      expect(pkg.dependencies["@supabase/ssr"]).toBeUndefined();
+
+      // Cloudinary yüklemeleri veri kaynağından bağımsız
+      expect(pkg.dependencies["cloudinary"]).toBeDefined();
+    });
+
+    it(".env should carry auth and Contentful variables", async () => {
+      const p = await scaffoldWithCms("cf-admin-env", "admin", "contentful");
+      const env = fs.readFileSync(path.join(p, ".env"), "utf-8");
+
+      expect(env).toContain("AUTH_SECRET");
+      expect(env).toContain("ADMIN_EMAIL");
+      expect(env).toContain("CONTENTFUL_MANAGEMENT_TOKEN");
+      expect(env).not.toContain("NEXT_PUBLIC_SUPABASE_URL");
+      expect(env).toContain("CLOUDINARY_API_KEY");
+    });
+  });
+
+  describe("Full-stack template", () => {
+    it("should apply the module to both sub-projects", async () => {
+      const p = await scaffoldWithCms("cf-fs", "full-stack", "contentful");
+
+      expect(fs.existsSync(path.join(p, "web/src/lib/contentful/client.ts"))).toBe(
+        true
+      );
+      expect(fs.existsSync(path.join(p, "admin/lib/contentful/client.ts"))).toBe(
+        true
+      );
+      expect(fs.existsSync(path.join(p, "web/src/lib/supabase"))).toBe(false);
+      expect(fs.existsSync(path.join(p, "admin/lib/supabase"))).toBe(false);
+    });
+
+    it("should keep sub-project package names", async () => {
+      const p = await scaffoldWithCms("cf-fs-names", "full-stack", "contentful");
+      expect(fs.readJsonSync(path.join(p, "web/package.json")).name).toBe("web");
+      expect(fs.readJsonSync(path.join(p, "admin/package.json")).name).toBe(
+        "admin"
+      );
+    });
+  });
+
+  describe("Module source integrity", () => {
+    const moduleDir = path.join(TEMPLATES_DIR, "modules/contentful");
+
+    it("should exist with a manifest", () => {
+      expect(fs.existsSync(path.join(moduleDir, "module.json"))).toBe(true);
+    });
+
+    it("manifest should be valid JSON with web and admin targets", () => {
+      const manifest = fs.readJsonSync(path.join(moduleDir, "module.json"));
+      expect(manifest.name).toBe("contentful");
+      expect(manifest.targets.web).toBeDefined();
+      expect(manifest.targets.admin).toBeDefined();
+    });
+
+    it("manifest remove paths should be relative and inside the project", () => {
+      const manifest = fs.readJsonSync(path.join(moduleDir, "module.json"));
+      for (const target of Object.values(manifest.targets) as Array<{
+        remove?: string[];
+      }>) {
+        for (const entry of target.remove ?? []) {
+          expect(path.isAbsolute(entry), `Absolute path: ${entry}`).toBe(false);
+          expect(entry.includes(".."), `Escapes project: ${entry}`).toBe(false);
+        }
+      }
+    });
+
+    it("should ship overlay directories for both targets", () => {
+      expect(fs.existsSync(path.join(moduleDir, "web"))).toBe(true);
+      expect(fs.existsSync(path.join(moduleDir, "admin"))).toBe(true);
+    });
+
+    it("both overlays should use the same contentful version", () => {
+      const manifest = fs.readJsonSync(path.join(moduleDir, "module.json"));
+      expect(manifest.targets.web.dependencies["contentful"]).toBe(
+        manifest.targets.admin.dependencies["contentful"]
+      );
+    });
   });
 });

@@ -1,7 +1,7 @@
 {
   "name": "create-nextjs-stack",
   "version": "0.2.0",
-  "description": "CLI to scaffold Next.js Landing Page and Supabase Admin Panel",
+  "description": "CLI to scaffold a Next.js Landing Page and Admin Panel, backed by Supabase or Contentful",
   "type": "commonjs",
   "private": false,
   "bin": {
@@ -21,9 +21,12 @@
     "test:verbose": "vitest run --reporter=verbose"
   },
   "dependencies": {
+    "boxen": "^5.1.2",
     "chalk": "^4.1.2",
     "commander": "^14.0.3",
+    "figlet": "^1.10.0",
     "fs-extra": "^11.3.3",
+    "gradient-string": "^2.0.2",
     "ora": "^5.4.1",
     "prompts": "^2.4.2",
     "update-notifier": "^5.1.0"
@@ -40,6 +43,9 @@
     "cli",
     "create",
     "supabase",
+    "contentful",
+    "cms",
+    "headless-cms",
     "admin",
     "tailwind",
     "typescript",
