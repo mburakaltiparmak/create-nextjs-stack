@@ -1,6 +1,6 @@
 {
   "name": "create-nextjs-stack",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "CLI to scaffold a Next.js Landing Page and Admin Panel, backed by Supabase or Contentful",
   "type": "commonjs",
   "private": false,
@@ -56,7 +56,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mburakaltiparmak/create-nextjs-stack.git"
+    "url": "git+https://github.com/mburakaltiparmak/create-nextjs-stack.git"
   },
   "homepage": "https://github.com/mburakaltiparmak/create-nextjs-stack/blob/main/README.md",
   "bugs": {
