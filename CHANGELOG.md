@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-12
+
+### Added
+
+- **Contentful as a selectable data source**: new `-c, --cms <type>` flag (`supabase` | `contentful`) and an interactive step for it. The template choice decides *what* is scaffolded, `--cms` decides *where the content lives*; the two are independent, so any template works with either data source. Omitting the flag keeps the existing Supabase behaviour.
+- **Overlay module engine** (`bin/modules.js`): `templates/web` and `templates/admin` remain the Supabase base, and `templates/modules/<name>/` is applied over the scaffolded result — overwriting files, removing the layer it replaces, and merging dependencies and scripts from `module.json`. Adding another CMS no longer means maintaining a second copy of a template.
+- **Web (Contentful)**: Content Delivery API client with entry-to-flat-row mappers, tagged `unstable_cache` wrappers, draft mode through the Preview API (`/api/preview`, `/api/preview/disable`), a webhook receiver at `/api/revalidate/contentful`, and a `<RichText />` renderer. The general-purpose `/api/revalidate` route is unchanged.
+- **Admin (Contentful)**: Content Management API service layer keeping the same public API as the Supabase one (`getAll`/`getById`/`create`/`update`/`delete`/`getOptions`, plus `count`), handling locale wrapping and Link/ID conversion. Reference fields are derived from `relation` in `config/resources.ts`.
+- **Admin auth (Contentful)**: Auth.js v5 credentials with an edge-safe split config and bcrypt hashing, plus an `auth:hash` script — Contentful has no user store, so the panel ships with a single env-configured administrator.
+- **Content model tooling**: `contentful:setup` builds the four content types in an empty space via `contentful-migration`, and `contentful:types` generates entry types with `cf-content-types-generator`.
+- **Terminal UI** (`bin/ui.js`): ASCII banner, numbered section headers, result and error boxes, install feedback and next-step hints.
+
+### Changed
+
+- Content type and field IDs deliberately mirror the Supabase schema (`products`, `featured_image_url`, `category_id`), so `ResourceFormClient`, `ImageUpload`, `useResource` and the web components are identical across data sources and switching does not ripple into UI code.
+- The `users` resource is omitted in the Contentful variant, since user records live in Auth.js rather than in the CMS.
+
 ## [0.1.9] - 2026-02-27
 
 ### Fixed
