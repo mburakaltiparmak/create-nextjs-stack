@@ -32,16 +32,11 @@ jobs:
       - name: Check package contents (dry-run)
         run: |
           echo "=== npm pack dry-run ==="
-          npm pack --dry-run 2>&1 | tee /tmp/pack-output.txt
+          npm pack --dry-run --json | tee /tmp/pack-output.json
 
           echo ""
           echo "=== Checking for unwanted files ==="
-          if grep -E "package-lock\.json|\.env[^.]|node_modules|\.next|\.git/" /tmp/pack-output.txt; then
-            echo "❌ ERROR: Unwanted files found in package!"
-            exit 1
-          else
-            echo "✅ Package contents look clean."
-          fi
+          node scripts/check-package-contents.js /tmp/pack-output.json
 
   # ── Test Matrix ────────────────────────────────────────────────────────────
   test:
