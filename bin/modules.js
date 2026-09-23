@@ -38,9 +38,19 @@ const IGNORED_BASENAMES = new Set([
   ".next",
   ".git",
   "package-lock.json",
-  ".env",
   ".DS_Store",
 ]);
+
+/**
+ * Template'ten kopyalanacak mı? `.env.example` dışındaki tüm `.env*` dosyaları
+ * (.env, .env.local, .env.backup …) gerçek anahtar içerebilir — asla kopyalanmaz.
+ */
+function shouldCopy(src) {
+  const basename = path.basename(src);
+  if (IGNORED_BASENAMES.has(basename)) return false;
+  if (basename.startsWith(".env") && basename !== ".env.example") return false;
+  return true;
+}
 
 function moduleDir(moduleName) {
   return path.join(MODULES_DIR, moduleName);
@@ -115,7 +125,7 @@ function applyModule(destPath, moduleName, targetName) {
   if (fs.existsSync(overlayDir)) {
     fs.copySync(overlayDir, destPath, {
       overwrite: true,
-      filter: (src) => !IGNORED_BASENAMES.has(path.basename(src)),
+      filter: shouldCopy,
     });
   }
 
@@ -131,6 +141,7 @@ function applyModule(destPath, moduleName, targetName) {
 module.exports = {
   MODULES_DIR,
   applyModule,
+  shouldCopy,
   moduleExists,
   readManifest,
 };

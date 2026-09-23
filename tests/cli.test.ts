@@ -218,6 +218,24 @@ describe("Web Template Scaffolding", () => {
       const p = await scaffoldTemplate("web-filter-ds", "web");
       expect(fs.existsSync(path.join(p, ".DS_Store"))).toBe(false);
     });
+
+    it("should NOT copy secret .env* files other than .env.example", async () => {
+      // Geliştiricinin template klasöründe kalmış yerel sırlar asla yeni projeye taşınmamalı.
+      const secretFiles = [".env.local", ".env.backup"].map((name) =>
+        path.join(TEMPLATES_DIR, "web", name),
+      );
+      const created = secretFiles.filter((file) => !fs.existsSync(file));
+      created.forEach((file) => fs.writeFileSync(file, "SECRET=do-not-copy\n"));
+
+      try {
+        const p = await scaffoldTemplate("web-filter-env", "web");
+        expect(fs.existsSync(path.join(p, ".env.local"))).toBe(false);
+        expect(fs.existsSync(path.join(p, ".env.backup"))).toBe(false);
+        expect(fs.existsSync(path.join(p, ".env.example"))).toBe(true);
+      } finally {
+        created.forEach((file) => fs.removeSync(file));
+      }
+    });
   });
 
   // --- 3c. package.json doğrulama ---

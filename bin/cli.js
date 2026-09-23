@@ -8,7 +8,7 @@ const chalk = require("chalk");
 const ora = require("ora");
 const { execSync } = require("child_process");
 const ui = require("./ui");
-const { applyModule } = require("./modules");
+const { applyModule, shouldCopy } = require("./modules");
 
 // Prompt'ları atlamamız gereken ortamlar (CI test koşusu gibi).
 const isInteractive =
@@ -191,19 +191,8 @@ program
 
       const copyTemplate = (sourceName, destPath) => {
         const source = path.join(templatesDir, sourceName);
-        fs.copySync(source, destPath, {
-          filter: (src) => {
-            const basename = path.basename(src);
-            return (
-              basename !== "node_modules" &&
-              basename !== ".next" &&
-              basename !== ".git" &&
-              basename !== "package-lock.json" &&
-              basename !== ".env" &&
-              basename !== ".DS_Store"
-            );
-          },
-        });
+        // Overlay ile aynı filtre: node_modules/.next/.git ve .env.example dışındaki tüm .env* dosyaları atlanır.
+        fs.copySync(source, destPath, { filter: shouldCopy });
 
         // Supabase base template'in kendisi; diğer veri kaynakları overlay olarak gelir.
         // .env üretiminden önce çalışmalı — overlay kendi .env.example'ını getirebilir.
