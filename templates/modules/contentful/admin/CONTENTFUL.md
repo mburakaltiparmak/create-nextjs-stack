@@ -29,6 +29,11 @@ npm run auth:hash -- "your-password" # → ADMIN_PASSWORD_HASH
 Put both in `.env` along with `ADMIN_EMAIL`, then delete the plaintext
 `ADMIN_PASSWORD` line (it exists only as a local-dev fallback).
 
+`.env` also ships with `AUTH_TRUST_HOST=true`. Outside Vercel (`next start`,
+Docker, Railway, a VPS…) Auth.js cannot verify the request host on its own and
+rejects every sign-in with an `UntrustedHost` error. Keep it, or replace it with
+`AUTH_URL=https://admin.yourdomain.com`. On Vercel it is detected automatically.
+
 There is no user table in Contentful, so the panel ships with a single
 env-configured administrator. To move to multiple users, change the body of
 `authorize()` in `auth.ts` — look the user up wherever you like and return the

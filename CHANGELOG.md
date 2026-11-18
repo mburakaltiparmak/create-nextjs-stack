@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Contentful admin: sign-in no longer fails with Auth.js `UntrustedHost` when the panel runs outside Vercel (`next start`, Docker, Railway, Netlify). The generated `.env` now sets `AUTH_TRUST_HOST=true`, and `CONTENTFUL.md` and the README explain the `AUTH_URL` alternative.
+
 ## [0.3.4] - 2026-08-12
 
 ### Documentation

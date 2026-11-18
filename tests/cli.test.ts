@@ -1152,6 +1152,8 @@ describe("Contentful Data Source", () => {
       const env = fs.readFileSync(path.join(p, ".env"), "utf-8");
 
       expect(env).toContain("AUTH_SECRET");
+      // Vercel dışında Auth.js aksi halde her girişi UntrustedHost ile reddeder.
+      expect(env).toMatch(/^AUTH_TRUST_HOST=true$/m);
       expect(env).toContain("ADMIN_EMAIL");
       expect(env).toContain("CONTENTFUL_MANAGEMENT_TOKEN");
       expect(env).not.toContain("NEXT_PUBLIC_SUPABASE_URL");

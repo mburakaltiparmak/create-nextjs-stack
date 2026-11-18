@@ -433,6 +433,7 @@ CONTENTFUL_WEBHOOK_SECRET=your-random-webhook-secret
 
 # Admin: Auth.js credentials
 AUTH_SECRET=your-random-auth-secret
+AUTH_TRUST_HOST=true          # required outside Vercel (or set AUTH_URL)
 ADMIN_EMAIL=admin@yourdomain.com
 ADMIN_PASSWORD_HASH=your-bcrypt-password-hash
 ```
@@ -516,6 +517,8 @@ Add a `netlify.toml` at the project root:
 ### Railway / Render / Other Node hosts
 
 These platforms detect Next.js automatically. Ensure your environment variables are configured in the platform's dashboard, then connect your repository and deploy.
+
+> **Contentful admin outside Vercel:** keep `AUTH_TRUST_HOST=true` (or set `AUTH_URL` to the panel's public URL). Without it Auth.js rejects every sign-in with `UntrustedHost`. This also applies to Netlify and Docker.
 
 ### Docker (Self-hosted)
 
