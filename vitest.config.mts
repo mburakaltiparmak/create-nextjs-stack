@@ -7,6 +7,7 @@ export default defineConfig({
       "**/dist/**",
       "**/test-output/**",
       "**/templates/**",
+      "**/._*",
     ],
     watch: false,
     testTimeout: 60_000,

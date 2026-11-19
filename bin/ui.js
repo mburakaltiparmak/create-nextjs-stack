@@ -69,17 +69,24 @@ function templateCard(type) {
 // cmsCard("contentful") → { emoji, label, desc, color }
 function cmsCard(cms) {
   const cards = {
-    supabase:   { emoji: "🗄️ ", label: "Supabase",   desc: "Postgres + Supabase Auth", color: cool },
-    contentful: { emoji: "📝", label: "Contentful", desc: "Headless CMS + Auth.js",   color: gold },
+    supabase:   { emoji: "🗄️ ", label: "Supabase",   desc: "Postgres + Cloudinary images", color: cool },
+    contentful: { emoji: "📝", label: "Contentful", desc: "Headless CMS + media library", color: gold },
   };
   return cards[cms] || cards["supabase"];
 }
 
 // ─── BAŞARI KUTUSU ───────────────────────────────────────────────────────────
 // Proje oluşturulduktan sonra çağır.
-function showSuccess({ appName, templateType, cms, root, packageManager }) {
+const AUTH_LABELS = { credentials: "Credentials (single admin)", auth0: "Auth0 (roles + invitations)", supabase: "Supabase Auth" };
+const LANG_LABELS = { en: "English", tr: "Türkçe" };
+
+function showSuccess({ appName, templateType, cms, auth, lang, root, packageManager }) {
   const card = templateCard(templateType);
   const source = cmsCard(cms);
+  const adminLines = templateType === "web" ? [] : [
+    `  ${dim("sign-in")}   ${chalk.white(AUTH_LABELS[auth] || auth)}`,
+    `  ${dim("admin ui")}  ${chalk.white(LANG_LABELS[lang] || lang)}`,
+  ];
   const lines = [
     "",
     `  ${tick} ${bold("Project created successfully!")}`,
@@ -87,6 +94,7 @@ function showSuccess({ appName, templateType, cms, root, packageManager }) {
     `  ${dim("name")}      ${chalk.white.bold(appName)}`,
     `  ${dim("template")}  ${card.emoji}  ${card.color(card.label)} ${dim("— " + card.desc)}`,
     `  ${dim("data")}      ${source.emoji}  ${source.color(source.label)} ${dim("— " + source.desc)}`,
+    ...adminLines,
     `  ${dim("path")}      ${dim(root)}`,
     `  ${dim("pkg mgr")}   ${chalk.cyan(packageManager || "npm")}`,
     "",
@@ -103,25 +111,28 @@ function showSuccess({ appName, templateType, cms, root, packageManager }) {
 }
 
 // ─── SONRAKI ADIMLAR ─────────────────────────────────────────────────────────
-function showNextSteps({ appName, templateType, cms, packageManager, installed }) {
+function showNextSteps({ appName, templateType, cms, auth, packageManager, installed }) {
   const pm = packageManager || "npm";
-  const runCmd     = pm === "yarn" ? "yarn dev"  : `${pm} run dev`;
-  const installCmd = pm === "yarn" ? "yarn"      : `${pm} install`;
+  const script = (name) => (pm === "yarn" ? `yarn ${name}` : `${pm} run ${name}`);
+  const installCmd = pm === "yarn" ? "yarn" : `${pm} install`;
+  const hasAdmin = templateType !== "web";
+  const adminDir = templateType === "full-stack" ? "admin" : ".";
 
   console.log(`  ${bold(cool("Next steps:"))}\n`);
   const steps = [`cd ${appName}`];
-  if (templateType === "full-stack") steps.push("cd web");
-  if (!installed) steps.push(installCmd);
-  if (cms === "contentful") {
-    steps.push(pm === "yarn" ? "yarn contentful:setup" : `${pm} run contentful:setup`);
-  }
-  steps.push(runCmd);
-  steps.forEach((s, i) => console.log(`  ${dim((i + 1) + ".")} ${chalk.cyan(s)}`));
+  if (!installed) steps.push(templateType === "full-stack" ? `(cd web && ${installCmd}) && (cd admin && ${installCmd})` : installCmd);
+  steps.push(`fill in ${templateType === "full-stack" ? "web/.env and admin/.env" : ".env"}`);
+  if (hasAdmin && cms === "contentful") steps.push(adminDir === "." ? `${script("contentful:setup")} && ${script("contentful:seed")}` : `(cd admin && ${script("contentful:setup")} && ${script("contentful:seed")})`);
+  if (hasAdmin && cms === "supabase") steps.push(`run ${adminDir === "." ? "" : "admin/"}supabase/schema.sql (and seed.sql) in the Supabase SQL editor`);
+  if (hasAdmin && auth === "credentials") steps.push(adminDir === "." ? `${script("auth:hash")} -- "your-password"   → ADMIN_PASSWORD_HASH` : `(cd admin && ${script("auth:hash")} -- "your-password")   → ADMIN_PASSWORD_HASH`);
+  steps.push(templateType === "full-stack" ? `(cd web && ${script("dev")}) & (cd admin && ${script("dev")})` : script("dev"));
+  steps.forEach((step, index) => console.log(`  ${dim((index + 1) + ".")} ${chalk.cyan(step)}`));
   console.log("");
 
-  if (cms === "contentful") {
-    console.log(`  ${dim("Fill in")} ${chalk.cyan(".env")} ${dim("first — CONTENTFUL_SPACE_ID, tokens and AUTH_SECRET.")}`);
-    console.log(`  ${dim("contentful:setup creates the content model in an empty space.")}\n`);
+  if (hasAdmin) {
+    if (auth === "auth0") console.log(`  ${dim("Auth0: create the applications, roles and the Post Login Action — see")} ${chalk.cyan("AUTH0.md")}`);
+    if (auth === "supabase") console.log(`  ${dim("Supabase Auth: add users under Authentication → Users and list them in")} ${chalk.cyan("ADMIN_EMAILS")}`);
+    console.log(`  ${dim("Admin runs on")} ${chalk.cyan("http://localhost:3001")}${templateType === "full-stack" ? dim(", the site on ") + chalk.cyan("http://localhost:3000") : ""}${dim(". Use the same PREVIEW_SECRET in both apps.")}\n`);
   }
 }
 

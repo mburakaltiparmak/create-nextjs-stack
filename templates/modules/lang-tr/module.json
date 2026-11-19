@@ -1,0 +1,9 @@
+{
+  "name": "lang-tr",
+  "label": "Türkçe",
+  "kind": "lang",
+  "description": "Turkish admin interface (labels, messages, validation errors, date formats).",
+  "targets": {
+    "admin": {}
+  }
+}

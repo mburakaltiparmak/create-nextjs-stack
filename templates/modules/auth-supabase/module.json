@@ -1,0 +1,27 @@
+{
+  "name": "auth-supabase",
+  "label": "Supabase Auth",
+  "kind": "auth",
+  "requires": { "cms": ["supabase"] },
+  "description": "Admin sign-in with Supabase Auth (email + password). Only addresses listed in ADMIN_EMAILS can open the panel.",
+  "targets": {
+    "admin": {
+      "remove": [
+        "src/auth.ts",
+        "src/auth.config.ts",
+        "src/app/api/auth",
+        "scripts/hash-password.mjs"
+      ],
+      "dependencies": {
+        "@supabase/ssr": "^0.8.0"
+      },
+      "removeDependencies": [
+        "next-auth",
+        "bcryptjs"
+      ],
+      "removeScripts": [
+        "auth:hash"
+      ]
+    }
+  }
+}

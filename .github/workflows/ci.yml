@@ -62,6 +62,39 @@ jobs:
       - name: Run tests
         run: npm test
 
+  # ── Üretilen projeler (E2E) ─────────────────────────────────────────────────
+  e2e:
+    name: E2E ${{ matrix.combo }}
+    runs-on: ubuntu-latest
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        combo:
+          - admin:supabase:credentials:en
+          - admin:supabase:auth0:en
+          - admin:supabase:supabase:en
+          - admin:contentful:credentials:en
+          - admin:contentful:auth0:en
+          - admin:contentful:credentials:tr
+          - admin:supabase:auth0:tr
+          - web:supabase
+          - web:contentful
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: "npm"
+
+      - name: Install CLI dependencies
+        run: npm ci
+
+      - name: Generate, install, typecheck, lint, test and build
+        run: npm run test:e2e -- ${{ matrix.combo }}
+
   # ── Coverage (sadece ana branch) ───────────────────────────────────────────
   coverage:
     name: Coverage Report

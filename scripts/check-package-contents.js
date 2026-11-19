@@ -36,6 +36,7 @@ const unwantedFiles = files.filter(({ path }) => {
 
   return (
     basename === "package-lock.json" ||
+    basename.startsWith("._") ||
     basename === ".env" ||
     (basename.startsWith(".env.") && basename !== ".env.example") ||
     segments.includes("node_modules") ||

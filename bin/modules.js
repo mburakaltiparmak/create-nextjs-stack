@@ -12,19 +12,21 @@
  *   {
  *     "name": "contentful",
  *     "label": "Contentful",
+ *     "kind": "cms" | "auth" | "lang",      ← CLI seçeneğinin türü (her türden en fazla bir modül)
+ *     "requires": { "cms": ["supabase"] },  ← isteğe bağlı: yalnız bu seçimlerle uygulanabilir
  *     "targets": {
  *       "web":   { "remove": [...], "dependencies": {...}, "devDependencies": {...},
- *                  "removeDependencies": [...], "scripts": {...} },
+ *                  "removeDependencies": [...], "scripts": {...}, "removeScripts": [...] },
  *       "admin": { ... }
  *     }
  *   }
  *
- * Uygulama sırası (copyTemplate içinden çağrılır):
- *   1. base template kopyalanır
- *   2. applyModule() → overlay dosyaları üzerine yazılır
- *   3. manifest'teki `remove` yolları silinir
- *   4. package.json bağımlılık/script merge'i yapılır
- *   5. .env.example → .env üretilir  (overlay kendi .env.example'ını getirebilir)
+ * Base template = Supabase + credentials (Auth.js) + English. Seçilen modüller sırayla (cms → auth → lang)
+ * uygulanır; her biri için (copyTemplate içinden):
+ *   1. overlay dosyaları üzerine yazılır
+ *   2. manifest'teki `remove` yolları silinir
+ *   3. package.json bağımlılık/script merge'i yapılır
+ * Sonra .env.example → .env üretilir (overlay kendi .env.example'ını getirebilir).
  */
 
 const fs = require("fs-extra");
@@ -38,9 +40,21 @@ const IGNORED_BASENAMES = new Set([
   ".next",
   ".git",
   "package-lock.json",
-  ".env",
   ".DS_Store",
 ]);
+
+/**
+ * Template'ten kopyalanacak mı? `.env.example` dışındaki tüm `.env*` dosyaları
+ * (.env, .env.local, .env.backup …) gerçek anahtar içerebilir — asla kopyalanmaz.
+ */
+function shouldCopy(src) {
+  const basename = path.basename(src);
+  if (IGNORED_BASENAMES.has(basename)) return false;
+  // macOS AppleDouble dosyaları (harici disklerde her dosyanın yanında oluşur).
+  if (basename.startsWith("._")) return false;
+  if (basename.startsWith(".env") && basename !== ".env.example") return false;
+  return true;
+}
 
 function moduleDir(moduleName) {
   return path.join(MODULES_DIR, moduleName);
@@ -87,6 +101,10 @@ function mergePackageJson(pkgPath, target) {
     pkg.scripts = { ...(pkg.scripts || {}), ...target.scripts };
   }
 
+  for (const script of target.removeScripts || []) {
+    if (pkg.scripts) delete pkg.scripts[script];
+  }
+
   fs.writeJsonSync(pkgPath, pkg, { spaces: 2 });
 }
 
@@ -115,7 +133,7 @@ function applyModule(destPath, moduleName, targetName) {
   if (fs.existsSync(overlayDir)) {
     fs.copySync(overlayDir, destPath, {
       overwrite: true,
-      filter: (src) => !IGNORED_BASENAMES.has(path.basename(src)),
+      filter: shouldCopy,
     });
   }
 
@@ -128,9 +146,57 @@ function applyModule(destPath, moduleName, targetName) {
   return true;
 }
 
+/**
+ * Seçimlere karşılık gelen modül listesi (sırayla uygulanır). Base template'in varsayılanları
+ * (supabase, credentials, en) modül değildir.
+ *
+ * @param {{ cms: string, auth: string, lang: string }} choices
+ * @returns {string[]}
+ */
+function modulesFor({ cms, auth, lang }) {
+  const names = [];
+  if (cms && cms !== "supabase") names.push(cms);
+  if (auth && auth !== "credentials") names.push(`auth-${auth}`);
+  if (lang && lang !== "en") names.push(`lang-${lang}`);
+  return names;
+}
+
+/**
+ * Bir modülün `requires` koşulunu denetler; uymuyorsa açıklayıcı bir hata metni döndürür.
+ *
+ * @param {string} moduleName
+ * @param {{ cms: string, auth: string, lang: string }} choices
+ * @returns {string | null}
+ */
+function incompatibility(moduleName, choices) {
+  if (!moduleExists(moduleName)) return `Unknown module: "${moduleName}"`;
+  const { requires = {}, label = moduleName } = readManifest(moduleName);
+  for (const [option, allowed] of Object.entries(requires)) {
+    if (!allowed.includes(choices[option])) {
+      return `${label} requires --${option} ${allowed.join(" or ")} (got "${choices[option]}")`;
+    }
+  }
+  return null;
+}
+
+/**
+ * Modülleri sırayla uygular.
+ *
+ * @param {string} destPath
+ * @param {string[]} moduleNames
+ * @param {string} targetName   "web" | "admin"
+ */
+function applyModules(destPath, moduleNames, targetName) {
+  for (const name of moduleNames) applyModule(destPath, name, targetName);
+}
+
 module.exports = {
   MODULES_DIR,
   applyModule,
+  applyModules,
+  modulesFor,
+  incompatibility,
+  shouldCopy,
   moduleExists,
   readManifest,
 };

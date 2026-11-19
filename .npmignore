@@ -14,3 +14,5 @@ templates/**/node_modules
 templates/**/.next
 templates/**/.git
 templates/**/.env
+
+._*
