@@ -1,0 +1,29 @@
+{
+  "name": "auth-auth0",
+  "label": "Auth0",
+  "kind": "auth",
+  "description": "Admin sign-in through Auth0 with editor / publisher / administrator roles, per-site access, invitations, user management and MFA.",
+  "targets": {
+    "admin": {
+      "remove": [
+        "src/auth.ts",
+        "src/auth.config.ts",
+        "src/app/(auth)",
+        "src/app/login-actions.ts",
+        "src/app/api/auth",
+        "scripts/hash-password.mjs"
+      ],
+      "dependencies": {
+        "@auth0/nextjs-auth0": "^4.29.0",
+        "resend": "^6.0.2"
+      },
+      "removeDependencies": [
+        "next-auth",
+        "bcryptjs"
+      ],
+      "removeScripts": [
+        "auth:hash"
+      ]
+    }
+  }
+}

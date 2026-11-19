@@ -1,181 +1,92 @@
-import { NextResponse } from 'next/server';
-import { Resend } from 'resend';
-import { z } from 'zod';
+import { NextResponse } from "next/server";
+import { Resend } from "resend";
+import { isLeadStoreConfigured, saveLeadRecord, setNotificationStatus } from "@/lib/leads";
+import { contactSchema, type ContactInput } from "@/lib/validation/contact";
 
-// Validate environment variable
-if (!process.env.RESEND_API_KEY) {
-  console.error('RESEND_API_KEY is not set in environment variables');
+/**
+ * İletişim formu:
+ *   1. Talep veri kaynağına kaydedilir (Supabase `leads` / Contentful `lead`; admin → Talepler) — yapılandırılmışsa
+ *   2. Resend ile CONTACT_EMAIL adresine bildirim e-postası gider — yapılandırılmışsa
+ * Talep bu iki yoldan birine ulaştıysa kabul edilir; e-posta durumu kayda sonradan işlenir.
+ *
+ *   RESEND_API_KEY, RESEND_FROM_EMAIL (Resend'de doğrulanmış gönderici), CONTACT_EMAIL (alıcı)
+ */
+
+const apiKey = process.env.RESEND_API_KEY?.trim();
+const resend = apiKey && !apiKey.startsWith("your") ? new Resend(apiKey) : null;
+const siteName = process.env.NEXT_PUBLIC_SITE_NAME || "Website";
+
+// IP başına 10 dakikada en fazla 5 gönderim (sunucu örneği belleğinde; en iyi çaba).
+const hits = new Map<string, number[]>();
+function allowed(ip: string, now = Date.now()) {
+  const recent = (hits.get(ip) ?? []).filter((time) => now - time < 10 * 60_000);
+  if (recent.length >= 5) return false;
+  hits.set(ip, [...recent, now]);
+  return true;
 }
 
-// Initialize Resend with API key
-const resend = new Resend(process.env.RESEND_API_KEY);
+const escapeHtml = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
-// Validation schema
-const contactFormSchema = z.object({
-  firstName: z.string().min(1, 'First name is required').max(50),
-  lastName: z.string().min(1, 'Last name is required').max(50),
-  email: z.string().email('Invalid email address'),
-  message: z.string().min(10, 'Message must be at least 10 characters').max(1000),
-});
+function rows(data: ContactInput): [string, string][] {
+  return [["Name", data.name], ["Email", data.email], ["Company", data.company || "–"], ["Phone", data.phone || "–"], ["Subject", data.subject || "–"]];
+}
 
-// Email template
-const createEmailHtml = (data: {
-  firstName: string;
-  lastName: string;
-  email: string;
-  message: string;
-}) => `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>New Contact Form Submission</title>
-</head>
-<body style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-    <!-- Header -->
-    <tr>
-      <td style="background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); padding: 40px 20px; text-align: center;">
-        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: bold; letter-spacing: 1px;">
-          EURODECO PANEL SYSTEMS
-        </h1>
-        <p style="color: #a0a0a0; margin: 10px 0 0; font-size: 14px;">
-          New Contact Form Submission
-        </p>
-      </td>
-    </tr>
-    
-    <!-- Content -->
-    <tr>
-      <td style="padding: 40px 30px;">
-        <h2 style="color: #1a1a1a; margin: 0 0 24px; font-size: 20px; font-weight: 600;">
-          Contact Details
-        </h2>
-        
-        <!-- Contact Info -->
-        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 30px;">
-          <tr>
-            <td style="padding: 12px 0; border-bottom: 1px solid #e5e5e5;">
-              <strong style="color: #666666; display: inline-block; width: 100px; font-size: 14px;">Name:</strong>
-              <span style="color: #1a1a1a; font-size: 14px;">${data.firstName} ${data.lastName}</span>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 12px 0; border-bottom: 1px solid #e5e5e5;">
-              <strong style="color: #666666; display: inline-block; width: 100px; font-size: 14px;">Email:</strong>
-              <a href="mailto:${data.email}" style="color: #3b82f6; text-decoration: none; font-size: 14px;">${data.email}</a>
-            </td>
-          </tr>
-        </table>
-        
-        <!-- Message -->
-        <h3 style="color: #1a1a1a; margin: 0 0 16px; font-size: 16px; font-weight: 600;">Message:</h3>
-        <div style="background-color: #f9fafb; border-left: 4px solid #3b82f6; padding: 20px; border-radius: 4px;">
-          <p style="color: #4b5563; margin: 0; line-height: 1.6; white-space: pre-wrap; font-size: 14px;">${data.message}</p>
-        </div>
-      </td>
-    </tr>
-    
-    <!-- Footer -->
-    <tr>
-      <td style="background-color: #f9fafb; padding: 20px 30px; text-align: center; border-top: 1px solid #e5e5e5;">
-        <p style="color: #9ca3af; margin: 0; font-size: 12px;">
-          This email was sent from the Eurodeco contact form
-        </p>
-        <p style="color: #9ca3af; margin: 8px 0 0; font-size: 12px;">
-          Received on ${new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })}
-        </p>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-`;
+const html = (data: ContactInput) => `<!doctype html><html><body style="font-family:Arial,sans-serif;background:#f8fafc;padding:24px">
+<table width="100%" style="max-width:600px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:8px">
+<tr><td style="padding:24px 28px;border-bottom:1px solid #e2e8f0"><h1 style="margin:0;font-size:18px;color:#0f172a">${escapeHtml(siteName)} — new enquiry</h1></td></tr>
+<tr><td style="padding:24px 28px"><table width="100%">${rows(data).map(([label, value]) => `<tr><td style="padding:6px 0;color:#64748b;width:120px;font-size:14px">${label}</td><td style="padding:6px 0;font-size:14px">${escapeHtml(value)}</td></tr>`).join("")}</table>
+<p style="white-space:pre-wrap;font-size:14px;line-height:1.6;background:#f8fafc;padding:16px;border-radius:6px">${escapeHtml(data.message)}</p></td></tr></table></body></html>`;
 
-// Plain text version
-const createEmailText = (data: {
-  firstName: string;
-  lastName: string;
-  email: string;
-  message: string;
-}) => `
-EURODECO PANEL SYSTEMS - New Contact Form Submission
-
-Contact Details:
-Name: ${data.firstName} ${data.lastName}
-Email: ${data.email}
-
-Message:
-${data.message}
-
----
-This email was sent from the Eurodeco contact form
-Received on ${new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })}
-`;
+const text = (data: ContactInput) => `${siteName} — new enquiry\n\n${rows(data).map(([label, value]) => `${label}: ${value}`).join("\n")}\n\n${data.message}\n`;
 
 export async function POST(request: Request) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  if (!allowed(ip)) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+
+  let body: unknown;
   try {
-    // Parse request body
-    const body = await request.json();
-
-    // Validate input
-    const validationResult = contactFormSchema.safeParse(body);
-
-    if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          error: 'Validation failed',
-          details: validationResult.error.issues
-        },
-        { status: 400 }
-      );
-    }
-
-    const data = validationResult.data;
-
-    // Send email using Resend
-    const emailResponse = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
-      to: process.env.CONTACT_EMAIL || 'info@eurodecopanel.de',
-      replyTo: data.email,
-      subject: `New Contact Form Submission from ${data.firstName} ${data.lastName}`,
-      html: createEmailHtml(data),
-      text: createEmailText(data),
-    });
-
-    console.log('Email sent successfully:', emailResponse);
-
-    // Check for errors in Resend response
-    if (emailResponse.error) {
-      console.error('Resend API Error:', emailResponse.error);
-      return NextResponse.json(
-        { error: 'Failed to send email. Please try again later.' },
-        { status: 500 }
-      );
-    }
-
-    // Success response
-    return NextResponse.json(
-      {
-        success: true,
-        message: 'Email sent successfully',
-        id: emailResponse.data?.id
-      },
-      { status: 200 }
-    );
-
-  } catch (error) {
-    console.error('Contact form error:', error);
-
-    return NextResponse.json(
-      { error: 'An unexpected error occurred. Please try again later.' },
-      { status: 500 }
-    );
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
-}
+  const parsed = contactSchema.safeParse(body);
+  if (!parsed.success) return NextResponse.json({ error: "Validation failed", details: parsed.error.issues }, { status: 400 });
+  const data = parsed.data;
 
-// Handle OPTIONS for CORS preflight
-export async function OPTIONS() {
-  return NextResponse.json({}, { status: 200 });
+  // Honeypot dolu → bot. Başarılı gibi davran, hiçbir şey kaydetme.
+  if (data.website) return NextResponse.json({ success: true });
+
+  const store = isLeadStoreConfigured();
+  if (!resend && !store) {
+    console.error("[contact] Neither Resend nor the lead store is configured — enquiry could not be delivered");
+    return NextResponse.json({ error: "Contact form is not configured" }, { status: 503 });
+  }
+
+  const record = store ? await saveLeadRecord(data).catch((error) => { console.error("[contact] Could not store lead:", error); return null; }) : null;
+
+  let notified: boolean | null = null;
+  if (resend) {
+    try {
+      const result = await resend.emails.send({
+        from: process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
+        to: process.env.CONTACT_EMAIL || process.env.RESEND_FROM_EMAIL || "",
+        replyTo: data.email,
+        subject: `${siteName}: ${data.subject || "New enquiry"} – ${data.name}`.replace(/[\r\n]+/g, " "),
+        html: html(data),
+        text: text(data),
+      });
+      if (result.error) console.error("[contact] Resend error:", result.error);
+      notified = !result.error;
+    } catch (error) {
+      console.error("[contact] Resend request failed:", error);
+      notified = false;
+    }
+  }
+
+  if (record) {
+    await setNotificationStatus(record, notified === null ? "skipped" : notified ? "sent" : "failed").catch((error) => console.error("[contact] Could not update notification status:", error));
+  }
+
+  if (!record && !notified) return NextResponse.json({ error: "Could not deliver your message. Please try again later." }, { status: 502 });
+  return NextResponse.json({ success: true });
 }

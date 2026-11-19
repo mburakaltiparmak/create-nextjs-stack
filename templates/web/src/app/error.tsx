@@ -1,28 +1,12 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
-export default function Error({
-    error,
-    reset,
-}: {
-    error: Error & { digest?: string };
-    reset: () => void;
-}) {
-    useEffect(() => {
-        console.error('Error:', error);
-    }, [error]);
-
-    return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white px-4 font-outfit">
-            <h2 className="text-4xl font-bold mb-4">Something went wrong!</h2>
-            <p className="text-white/60 mb-8">We&apos;re sorry for the inconvenience.</p>
-            <button
-                onClick={reset}
-                className="px-6 py-3 bg-red-600 hover:bg-red-700 transition-colors font-bold rounded-md"
-            >
-                Try again
-            </button>
-        </div>
-    );
+export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  useEffect(() => { console.error(error); }, [error]);
+  return <main className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center px-6 text-center">
+    <h1 className="text-3xl font-bold text-slate-900">Something went wrong</h1>
+    <p className="mt-3 text-slate-600">Please try again in a moment.</p>
+    <button onClick={reset} className="mt-8 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-700">Try again</button>
+  </main>;
 }

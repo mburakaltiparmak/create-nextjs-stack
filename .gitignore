@@ -42,3 +42,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 TODO.txt
+# macOS AppleDouble files (external drives)
+._*

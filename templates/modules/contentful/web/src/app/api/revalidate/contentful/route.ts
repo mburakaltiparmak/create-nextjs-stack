@@ -63,17 +63,16 @@ export async function POST(request: NextRequest) {
     revalidateTag(contentType, 'everything');
     revalidated.push(`tag:${contentType}`);
 
-    // Detay sayfası varsa onu da tazele.
+    // Detay sayfası ve listeler (posts → /blog/<slug>, pages → /<slug>).
     const slug = firstLocaleValue(payload?.fields?.slug);
-    if (slug) {
-      revalidatePath(`/${contentType}/${slug}`);
-      revalidated.push(`path:/${contentType}/${slug}`);
+    const detail = contentType === 'posts' ? (slug ? `/blog/${slug}` : null) : contentType === 'pages' && slug ? `/${slug}` : null;
+    if (detail) {
+      revalidatePath(detail);
+      revalidated.push(`path:${detail}`);
     }
-
-    // Listeleme ve ana sayfa da bu içeriği gösteriyor olabilir.
-    revalidatePath(`/${contentType}`);
     revalidatePath('/');
-    revalidated.push(`path:/${contentType}`, 'path:/');
+    if (contentType === 'posts') revalidatePath('/blog');
+    revalidated.push('path:/');
 
     return NextResponse.json({
       revalidated: true,

@@ -8,7 +8,7 @@ const chalk = require("chalk");
 const ora = require("ora");
 const { execSync } = require("child_process");
 const ui = require("./ui");
-const { applyModule, shouldCopy } = require("./modules");
+const { applyModules, incompatibility, modulesFor, shouldCopy } = require("./modules");
 
 // Prompt'ları atlamamız gereken ortamlar (CI test koşusu gibi).
 const isInteractive =
@@ -48,10 +48,12 @@ if (notifier.update) {
 program
   .name("create-nextjs-stack")
   .version(packageJson.version, "-v, --version", "Output the current version")
-  .description("Scaffold a new Next.js Project with a Supabase or Contentful backend")
+  .description("Scaffold a Next.js site and admin panel with a Supabase or Contentful backend")
   .argument("[project-directory]", "Directory to create the project in")
   .option("-t, --template <type>", "Template type: web, admin, or full-stack")
   .option("-c, --cms <type>", "Data source: supabase or contentful")
+  .option("-a, --auth <type>", "Admin sign-in: credentials, auth0, or supabase (supabase data source only)")
+  .option("-l, --lang <code>", "Admin interface language: en or tr")
   .action(async (projectDirectory, options) => {
 
     // Banner — en başta göster
@@ -69,10 +71,22 @@ program
       process.exit(1);
     }
 
+    const validAuth = ["credentials", "auth0", "supabase"];
+    if (options.auth && !validAuth.includes(options.auth)) {
+      ui.showError(`Invalid sign-in method: "${options.auth}"\nValid options: ${validAuth.join(", ")}`);
+      process.exit(1);
+    }
+
+    const validLang = ["en", "tr"];
+    if (options.lang && !validLang.includes(options.lang)) {
+      ui.showError(`Invalid admin language: "${options.lang}"\nValid options: ${validLang.join(", ")}`);
+      process.exit(1);
+    }
+
     let targetDir = projectDirectory;
 
     // 1. Get Project Name / Directory
-    ui.sectionHeader(1, 4, "Project Setup");
+    ui.sectionHeader(1, 6, "Project Setup");
     if (!targetDir) {
       const res = await prompts({
         type: "text",
@@ -94,7 +108,7 @@ program
     // 2. Select Template Type
     let templateType = options.template;
 
-    ui.sectionHeader(2, 4, "Choose Template");
+    ui.sectionHeader(2, 6, "Choose Template");
     if (!templateType) {
       const res = await prompts({
         type: "select",
@@ -112,7 +126,7 @@ program
             description: "Just the landing page/web application",
           },
           {
-            title: "⚙️   Admin Only (Supabase Admin)",
+            title: "⚙️   Admin Only (Admin Panel)",
             value: "admin",
             description: "Just the admin panel",
           },
@@ -132,21 +146,21 @@ program
 
     if (!cms) {
       if (isInteractive) {
-        ui.sectionHeader(3, 4, "Choose Data Source");
+        ui.sectionHeader(3, 6, "Choose Data Source");
         const res = await prompts({
           type: "select",
           name: "cms",
           message: "Where should your content live?",
           choices: [
             {
-              title: "🗄️   Supabase (Postgres + Auth)",
+              title: "🗄️   Supabase (Postgres)",
               value: "supabase",
-              description: "Relational tables, Supabase Auth, SQL schema included",
+              description: "Relational tables, SQL schema included, images on Cloudinary",
             },
             {
               title: "📝  Contentful (Headless CMS)",
               value: "contentful",
-              description: "Contentful content model, Auth.js admin login, preview + webhooks",
+              description: "Content model + migrations, media library, preview + webhooks",
             },
           ],
           initial: 0,
@@ -163,7 +177,70 @@ program
       }
     }
 
-    // 4. Ensure Directory exists
+    const includesAdmin = templateType !== "web";
+
+    // 4. Admin sign-in method
+    let auth = options.auth;
+    if (!auth) {
+      if (isInteractive && includesAdmin) {
+        ui.sectionHeader(4, 6, "Admin Sign-in");
+        const res = await prompts({
+          type: "select",
+          name: "auth",
+          message: "How should editors sign in to the admin panel?",
+          choices: [
+            { title: "🔑  Credentials (single admin)", value: "credentials", description: "Auth.js, one admin account from .env — simplest setup" },
+            { title: "🛡️   Auth0 (roles + invitations)", value: "auth0", description: "Editor / publisher / administrator roles, user management, MFA" },
+            ...(cms === "supabase" ? [{ title: "🗄️   Supabase Auth", value: "supabase", description: "Supabase users; access limited by ADMIN_EMAILS" }] : []),
+          ],
+          initial: 0,
+        });
+        auth = res.auth;
+        if (!auth) {
+          ui.showCancelled();
+          process.exit(1);
+        }
+      } else {
+        auth = "credentials";
+      }
+    }
+
+    // 5. Admin interface language
+    let lang = options.lang;
+    if (!lang) {
+      if (isInteractive && includesAdmin) {
+        ui.sectionHeader(5, 6, "Admin Language");
+        const res = await prompts({
+          type: "select",
+          name: "lang",
+          message: "Which language should the admin interface use?",
+          choices: [
+            { title: "🇬🇧  English", value: "en" },
+            { title: "🇹🇷  Türkçe", value: "tr" },
+          ],
+          initial: 0,
+        });
+        lang = res.lang;
+        if (!lang) {
+          ui.showCancelled();
+          process.exit(1);
+        }
+      } else {
+        lang = "en";
+      }
+    }
+
+    const choices = { cms, auth, lang };
+    const modules = modulesFor(choices);
+    for (const name of modules) {
+      const problem = incompatibility(name, choices);
+      if (problem) {
+        ui.showError(problem);
+        process.exit(1);
+      }
+    }
+
+    // 6. Ensure Directory exists
     if (fs.existsSync(root)) {
       const files = fs.readdirSync(root);
       if (files.length > 0) {
@@ -184,7 +261,7 @@ program
       fs.ensureDirSync(root);
     }
 
-    const spinner = ora(`Scaffolding ${templateType} with ${cms}...`).start();
+    const spinner = ora(`Scaffolding ${templateType} with ${cms}${includesAdmin ? ` · ${auth} · ${lang}` : ""}...`).start();
 
     try {
       const templatesDir = path.join(__dirname, "..", "templates");
@@ -194,10 +271,19 @@ program
         // Overlay ile aynı filtre: node_modules/.next/.git ve .env.example dışındaki tüm .env* dosyaları atlanır.
         fs.copySync(source, destPath, { filter: shouldCopy });
 
-        // Supabase base template'in kendisi; diğer veri kaynakları overlay olarak gelir.
-        // .env üretiminden önce çalışmalı — overlay kendi .env.example'ını getirebilir.
-        if (cms !== "supabase") {
-          applyModule(destPath, cms, sourceName);
+        // Base template = Supabase + credentials + English; seçilen modüller sırayla üzerine uygulanır
+        // (modülün o target için tanımı yoksa atlanır). .env üretiminden önce çalışmalı — overlay
+        // kendi .env.example'ını getirebilir.
+        applyModules(destPath, modules, sourceName);
+
+        // Admin şablonu .env.example'ı bölümler hâlinde taşır (env-example.d/NN-*.env): veri kaynağı ve giriş
+        // modülleri yalnız kendi bölümünü değiştirir. Bölümler sırayla birleştirilip klasör silinir.
+        const envParts = path.join(destPath, "env-example.d");
+        if (fs.existsSync(envParts)) {
+          const sections = fs.readdirSync(envParts).filter((file) => file.endsWith(".env")).sort()
+            .map((file) => fs.readFileSync(path.join(envParts, file), "utf8").trim());
+          fs.writeFileSync(path.join(destPath, ".env.example"), `${sections.join("\n\n")}\n`);
+          fs.removeSync(envParts);
         }
 
         const envExample = path.join(destPath, ".env.example");
@@ -237,7 +323,7 @@ program
       if (isInteractive) {
         const detectedPm = detectPackageManager();
 
-        ui.sectionHeader(4, 4, "Package Manager");
+        ui.sectionHeader(6, 6, "Package Manager");
         const { packageManager } = await prompts({
           type: "select",
           name: "packageManager",
@@ -293,14 +379,14 @@ program
           }
         }
 
-        ui.showSuccess({ appName, templateType, cms, root, packageManager });
-        ui.showNextSteps({ appName, templateType, cms, packageManager, installed: shouldInstall });
+        ui.showSuccess({ appName, templateType, cms, auth, lang, root, packageManager });
+        ui.showNextSteps({ appName, templateType, cms, auth, packageManager, installed: shouldInstall });
         ui.showFooter();
 
       } else {
         // Fallback for tests
-        ui.showSuccess({ appName, templateType, cms, root, packageManager: "npm" });
-        ui.showNextSteps({ appName, templateType, cms, packageManager: "npm", installed: false });
+        ui.showSuccess({ appName, templateType, cms, auth, lang, root, packageManager: "npm" });
+        ui.showNextSteps({ appName, templateType, cms, auth, packageManager: "npm", installed: false });
       }
 
     } catch (error) {

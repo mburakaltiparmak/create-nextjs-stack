@@ -1,6 +1,6 @@
 {
   "name": "create-nextjs-stack",
-  "version": "0.3.4",
+  "version": "0.4.0",
   "description": "CLI to scaffold a Next.js Landing Page and Admin Panel, backed by Supabase or Contentful",
   "type": "commonjs",
   "private": false,
@@ -18,7 +18,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:verbose": "vitest run --reporter=verbose"
+    "test:verbose": "vitest run --reporter=verbose",
+    "test:e2e": "node scripts/e2e.mjs"
   },
   "dependencies": {
     "boxen": "^5.1.2",
@@ -52,7 +53,7 @@
     "react",
     "boilerplate"
   ],
-  "author": "Mehmet Burak Altıparmak <mburakaltiparmak@gmail.com>",
+  "author": "Mehmet Burak Alt\u0131parmak <mburakaltiparmak@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",

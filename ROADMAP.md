@@ -289,7 +289,7 @@ tests/
     └── cli.test.ts (existing)
 ```
 
-#### 13. E2E Tests for Generated Projects
+#### 13. E2E Tests for Generated Projects ✅ (0.4.0 — `npm run test:e2e`)
 
 **Priority**: Medium  
 **Effort**: Very High (15-20 hours)

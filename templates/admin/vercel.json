@@ -1,0 +1,4 @@
+{
+  "framework": "nextjs",
+  "crons": [{ "path": "/api/cron/lead-retention", "schedule": "0 1 * * *" }]
+}

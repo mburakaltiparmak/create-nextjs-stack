@@ -1,42 +1,31 @@
-import { createClient } from '@supabase/supabase-js';
-import { createBrowserClient } from '@supabase/ssr';
-import type { Database } from './types';
+import "server-only";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 /**
- * Get Supabase client for server-side operations
- * Uses SERVICE_ROLE_KEY for full database access
+ * Supabase istemcileri (yalnız sunucuda).
+ *   public   anon anahtar — RLS gereği yalnız `published` içerikleri görür
+ *   service  service role — önizleme (taslaklar) ve iletişim formu talepleri; asla tarayıcıya gitmez
  */
-export function getAdminClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+let publicClient: SupabaseClient | null = null;
+let serviceClient: SupabaseClient | null = null;
 
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error(
-      'Missing Supabase credentials. Please check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env'
-    );
-  }
+const url = () => process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+const configured = (value?: string) => Boolean(value && !value.includes("your"));
 
-  return createClient<Database>(supabaseUrl, supabaseKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
+export function isSupabaseConfigured() {
+  return configured(url()) && configured(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 }
 
-/**
- * Get Supabase client for browser-side operations
- * Uses createBrowserClient from @supabase/ssr to properly handle Cookies
- */
-export function getBrowserClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+export function supabasePublic() {
+  publicClient ??= createClient(url()!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } });
+  return publicClient;
+}
 
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error(
-      'Missing Supabase credentials. Please check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env'
-    );
-  }
+export function isServiceConfigured() {
+  return configured(url()) && configured(process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
 
-  return createBrowserClient<Database>(supabaseUrl, supabaseKey);
+export function supabaseService() {
+  serviceClient ??= createClient(url()!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false, autoRefreshToken: false } });
+  return serviceClient;
 }

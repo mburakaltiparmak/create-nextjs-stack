@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-19
+
+### ⚠ Breaking
+
+- **New admin template.** The panel is rebuilt on a model-driven architecture: content types are declared once in
+  `src/lib/models/site.ts` and forms, Zod validation, lists and storage mapping are generated from it. The old
+  `config/resources.ts`, `lib/services/*`, Redux store, react-hook-form and react-toastify layers are gone, and the
+  admin now lives under `src/`.
+- **New sample content model:** `posts` and `pages` replace categories / products / clients / projects in both data
+  sources and on the website.
+- **Supabase admin sign-in** is now chosen with `--auth`; the default is Auth.js credentials (`--auth supabase` keeps
+  Supabase Auth).
+
+### Added
+
+- `--auth <credentials|auth0|supabase>`: single admin from `.env`, Auth0 roles (editor / publisher / administrator,
+  per-site access, invitations, user management, MFA) or Supabase Auth limited by `ADMIN_EMAILS`.
+- `--lang <en|tr>`: the admin interface text lives in typed dictionaries (`src/lib/i18n`), including validation
+  messages and date formats.
+- Admin: drafts and publishing with optimistic locking, signed draft preview on the website, image fields
+  (Cloudinary for Supabase, Contentful media library with crop / replace for Contentful), reference and boolean
+  fields, leads screen with GDPR retention and a nightly Vercel cron, shadcn/ui shell with per-type sidebar,
+  command menu, light / dark theme, rate limits and audit logs, `npm run config:check`, Vitest unit tests.
+- Supabase: `admin/supabase/schema.sql` (status, version and `published_at` triggers, RLS) and `seed.sql`;
+  the admin refreshes the website cache through `/api/revalidate` after publishing.
+- Contentful: idempotent `contentful:setup` migration runner and `contentful:seed` in the admin.
+- Website: blog, pages and contact routes behind one content service; contact enquiries are stored as leads and
+  emailed via Resend; HMAC-verified preview route.
+- Ordered overlay modules (`cms` → `auth` → `lang`) with `requires`, `removeScripts` and `.env.example` fragments.
+- `npm run test:e2e`: generates every combination, installs it and runs typecheck, lint, tests and a production
+  build; runs in CI.
+
+### Removed
+
+- Leftover client branding in the website's contact email.
+- macOS `._*` files are never copied into generated projects or the npm package.
+
 ### Fixed
 
 - Contentful admin: sign-in no longer fails with Auth.js `UntrustedHost` when the panel runs outside Vercel (`next start`, Docker, Railway, Netlify). The generated `.env` now sets `AUTH_TRUST_HOST=true`, and `CONTENTFUL.md` and the README explain the `AUTH_URL` alternative.
